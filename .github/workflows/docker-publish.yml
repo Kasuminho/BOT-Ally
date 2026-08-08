@@ -3,6 +3,7 @@ name: Build & Publish Docker Image to GHCR
 on:
   push:
     branches: [ "main", "master" ]
+    tags: [ "v*.*.*", "v*" ]
   workflow_dispatch:
 
 permissions:
@@ -31,6 +32,8 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
             type=sha,format=short
 
       - name: Configurar Docker Buildx
