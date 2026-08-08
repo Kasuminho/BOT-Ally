@@ -33,21 +33,29 @@ export function initScheduler(client) {
 
   // 1. Cron Job Diário para o Lembrete de 20 minutos antes (às 22:40 GMT-3)
   cron.schedule('40 22 * * *', async () => {
-    console.log('📢 [SCHEDULER] Executando aviso prévio das 22:40 para Bosses Fixos (23:00)...');
+    console.log('📢 [SCHEDULER] Executando aviso prévio das 22:40 (20m) para Bosses Fixos (23:00)...');
     await sendDailyFixedAnnouncement(client, 'REMINDER_20M');
   }, {
     timezone: 'America/Sao_Paulo'
   });
 
-  // 2. Cron Job Diário para o Lembrete de 3 minutos antes (às 22:57 GMT-3)
-  cron.schedule('57 22 * * *', async () => {
-    console.log('🔥 [SCHEDULER] Executando aviso prévio das 22:57 (3m) para Bosses Fixos (23:00)...');
-    await sendDailyFixedAnnouncement(client, 'REMINDER_3M');
+  // 2. Cron Job Diário para o Lembrete de 5 minutos antes (às 22:55 GMT-3)
+  cron.schedule('55 22 * * *', async () => {
+    console.log('🔥 [SCHEDULER] Executando aviso prévio das 22:55 (5m) para Bosses Fixos (23:00)...');
+    await sendDailyFixedAnnouncement(client, 'REMINDER_5M');
   }, {
     timezone: 'America/Sao_Paulo'
   });
 
-  // 3. Cron Job Minuto a Minuto para rastrear Outros Bosses agendados
+  // 3. Cron Job Diário para o Nascimento dos Bosses (às 23:00 GMT-3)
+  cron.schedule('0 23 * * *', async () => {
+    console.log('💥 [SCHEDULER] Executando aviso de spawn das 23:00 para Bosses Fixos...');
+    await sendDailyFixedAnnouncement(client, 'SPAWN');
+  }, {
+    timezone: 'America/Sao_Paulo'
+  });
+
+  // 4. Cron Job Minuto a Minuto para rastrear Outros Bosses agendados
   cron.schedule('* * * * *', async () => {
     await checkCustomBossReminders(client);
   }, {
@@ -58,7 +66,7 @@ export function initScheduler(client) {
 /**
  * Envia o aviso fixo único para os Bosses das 23:00 (Interserver -> @everyone)
  * @param {import('discord.js').Client} client 
- * @param {'REMINDER_20M' | 'REMINDER_3M'} noticeType 
+ * @param {'REMINDER_20M' | 'REMINDER_5M' | 'SPAWN'} noticeType 
  */
 async function sendDailyFixedAnnouncement(client, noticeType) {
   const channelId = config.announcementChannelId;
@@ -72,9 +80,15 @@ async function sendDailyFixedAnnouncement(client, noticeType) {
     if (channel && channel.isTextBased()) {
       const embed = createDailyFixedEmbed(noticeType);
       const pingRole = '@everyone';
-      const contentText = noticeType === 'REMINDER_20M'
-        ? `🚨 **[LEMBRETE 20M]** Bosses Fixos das 23:00! ${pingRole}`
-        : `🔥 **[LEMBRETE 3M]** Bosses Fixos das 23:00 nascem em 3 minutos! ${pingRole}`;
+      let contentText = '';
+
+      if (noticeType === 'REMINDER_20M') {
+        contentText = `🚨 **[LEMBRETE 20M]** Bosses Fixos das 23:00! ${pingRole}`;
+      } else if (noticeType === 'REMINDER_5M') {
+        contentText = `🔥 **[LEMBRETE 5M]** Bosses Fixos das 23:00 nascem em 5 minutos! ${pingRole}`;
+      } else {
+        contentText = `💥 **[BOSSES NASCERAM]** Bosses Fixos das 23:00 NASCERAM AGORA! ${pingRole}`;
+      }
 
       await channel.send({
         content: contentText,
@@ -116,8 +130,8 @@ async function checkCustomBossReminders(client) {
 
     const pingRole = getPingRoleForBoss(boss);
 
-    // 1. Aviso de 20 Minutos Antes (janela de 5 a 20 minutos)
-    if (diffMinutes <= 20 && diffMinutes > 5 && !boss.notified20m) {
+    // 1. Aviso de 20 Minutos Antes (janela de 8 a 20 minutos)
+    if (diffMinutes <= 20 && diffMinutes > 8 && !boss.notified20m) {
       boss.notified20m = true;
       updated = true;
       db.updateBoss(boss);
@@ -136,24 +150,44 @@ async function checkCustomBossReminders(client) {
         console.error(`❌ [SCHEDULER] Erro ao enviar aviso 20M para ${boss.name}:`, err);
       }
     }
-    // 2. Aviso de 3 Minutos Antes (janela <= 3 minutos)
-    else if (diffMinutes <= 3 && diffMinutes > -5 && !boss.notified3m) {
-      boss.notified3m = true;
+    // 2. Aviso de 5 Minutos Antes (janela de 1 a 5 minutos)
+    else if (diffMinutes <= 5 && diffMinutes > 1 && !boss.notified5m) {
+      boss.notified5m = true;
       updated = true;
       db.updateBoss(boss);
 
       try {
         const channel = await client.channels.fetch(channelId);
         if (channel && channel.isTextBased()) {
-          const embed = createCustomBossEmbed(boss, 'REMINDER_3M');
+          const embed = createCustomBossEmbed(boss, 'REMINDER_5M');
           await channel.send({
-            content: `🔥 **[AVISO 3M]** O Boss **${boss.name}** vai nascer em 3 MINUTOS! ${pingRole}`,
+            content: `🔥 **[AVISO 5M]** O Boss **${boss.name}** vai nascer em 5 MINUTOS! ${pingRole}`,
             embeds: [embed]
           });
-          console.log(`✅ [SCHEDULER] Lembrete 3M enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
+          console.log(`✅ [SCHEDULER] Lembrete 5M enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
         }
       } catch (err) {
-        console.error(`❌ [SCHEDULER] Erro ao enviar aviso 3M para ${boss.name}:`, err);
+        console.error(`❌ [SCHEDULER] Erro ao enviar aviso 5M para ${boss.name}:`, err);
+      }
+    }
+    // 3. Aviso no Momento do Spawn (janela <= 0 minutos)
+    else if (diffMinutes <= 0 && !boss.notifiedSpawn) {
+      boss.notifiedSpawn = true;
+      updated = true;
+      db.updateBoss(boss);
+
+      try {
+        const channel = await client.channels.fetch(channelId);
+        if (channel && channel.isTextBased()) {
+          const embed = createCustomBossEmbed(boss, 'SPAWN');
+          await channel.send({
+            content: `💥 **[BOSS NASCEU]** O Boss **${boss.name}** NASCEU AGORA! ${pingRole}`,
+            embeds: [embed]
+          });
+          console.log(`✅ [SCHEDULER] Aviso SPAWN enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
+        }
+      } catch (err) {
+        console.error(`❌ [SCHEDULER] Erro ao enviar aviso SPAWN para ${boss.name}:`, err);
       }
     }
   }

@@ -2,14 +2,12 @@ import { EmbedBuilder } from 'discord.js';
 
 /**
  * Cria o Embed "enfeitado" para o aviso diário fixo das 23:00 (TA 2 / TA 3 / TA 4)
- * @param {'REMINDER_20M' | 'REMINDER_3M'} noticeType 
+ * @param {'REMINDER_20M' | 'REMINDER_5M' | 'SPAWN'} noticeType 
  */
 export function createDailyFixedEmbed(noticeType) {
-  const is20m = noticeType === 'REMINDER_20M';
-
   const embed = new EmbedBuilder().setTimestamp();
 
-  if (is20m) {
+  if (noticeType === 'REMINDER_20M') {
     embed
       .setTitle('🚨 ⚔️ [ALERTA 20 MINUTOS] BOSSES FIXOS DAS 23:00 ⚔️ 🚨')
       .setColor('#FF9900')
@@ -23,12 +21,12 @@ export function createDailyFixedEmbed(noticeType) {
         { name: '🏰 TA 4', value: '👑 **Turga / Gillaot / Frezam**', inline: true }
       )
       .setFooter({ text: 'BOT Ally • Lembrete 20m (22:40)' });
-  } else {
+  } else if (noticeType === 'REMINDER_5M') {
     embed
-      .setTitle('🔥 ⚔️ [ALERTA 3 MINUTOS] BOSSES FIXOS NASCENDO EM BREVE! ⚔️ 🔥')
-      .setColor('#FF3300')
+      .setTitle('🔥 ⚔️ [ALERTA 5 MINUTOS] BOSSES FIXOS NASCENDO EM BREVE! ⚔️ 🔥')
+      .setColor('#FF5500')
       .setDescription(
-        '🚨 **ATENÇÃO GUILD ALLY!** Todos os Bosses fixos das **23:00** nascem em **3 MINUTOS**!\n' +
+        '🚨 **ATENÇÃO GUILD ALLY!** Todos os Bosses fixos das **23:00** nascem em **5 MINUTOS**!\n' +
         ' Corram para os mapas!'
       )
       .addFields(
@@ -36,7 +34,21 @@ export function createDailyFixedEmbed(noticeType) {
         { name: '🏰 TA 3', value: '🔥 **Dergio**', inline: true },
         { name: '🏰 TA 4', value: '🔥 **Turga / Gillaot / Frezam**', inline: true }
       )
-      .setFooter({ text: 'BOT Ally • Lembrete 3m (22:57)' });
+      .setFooter({ text: 'BOT Ally • Lembrete 5m (22:55)' });
+  } else {
+    embed
+      .setTitle('⚔️ 🔥 [BOSSES NASCERAM] TA 2 / TA 3 / TA 4 NASCERAM! 🔥 ⚔️')
+      .setColor('#FF0033')
+      .setDescription(
+        '⚔️ **ATENÇÃO GUILD ALLY!** Todos os Bosses fixos das **23:00** NASCERAM AGORA!\n' +
+        ' Matem os Bosses e garantam os loots!'
+      )
+      .addFields(
+        { name: '🏰 TA 2', value: '💥 **Ducas**', inline: true },
+        { name: '🏰 TA 3', value: '💥 **Dergio**', inline: true },
+        { name: '🏰 TA 4', value: '💥 **Turga / Gillaot / Frezam**', inline: true }
+      )
+      .setFooter({ text: 'BOT Ally • Spawn Diário (23:00)' });
   }
 
   return embed;
@@ -45,7 +57,7 @@ export function createDailyFixedEmbed(noticeType) {
 /**
  * Cria Embed para agendamentos individuais dos Outros Bosses
  * @param {Object} boss 
- * @param {'REGISTERED' | 'REMINDER_20M' | 'REMINDER_3M'} noticeType 
+ * @param {'REGISTERED' | 'REMINDER_20M' | 'REMINDER_5M' | 'SPAWN'} noticeType 
  */
 export function createCustomBossEmbed(boss, noticeType) {
   const embed = new EmbedBuilder().setTimestamp();
@@ -74,17 +86,27 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
       )
       .setFooter({ text: 'BOT Ally • Lembrete 20m' });
-  } else if (noticeType === 'REMINDER_3M') {
+  } else if (noticeType === 'REMINDER_5M') {
     embed
-      .setTitle(`🔥 ⚔️ [ALERTA 3 MINUTOS] ${boss.name.toUpperCase()} NASCENDO EM BREVE! ⚔️ 🔥`)
-      .setColor('#FF3300')
-      .setDescription(`🚨 Faltam apenas **3 minutos** para o nascimento do Boss **${boss.name}** no local **${boss.location}**! Corram!`)
+      .setTitle(`🔥 ⚔️ [ALERTA 5 MINUTOS] ${boss.name.toUpperCase()} NASCENDO EM BREVE! ⚔️ 🔥`)
+      .setColor('#FF5500')
+      .setDescription(`🚨 Faltam apenas **5 minutos** para o nascimento do Boss **${boss.name}** no local **${boss.location}**! Corram!`)
       .addFields(
         { name: '👾 Boss', value: `**${boss.name}**`, inline: true },
         { name: '📍 Local', value: `**${boss.location}**`, inline: true },
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
       )
-      .setFooter({ text: 'BOT Ally • Lembrete 3m' });
+      .setFooter({ text: 'BOT Ally • Lembrete 5m' });
+  } else if (noticeType === 'SPAWN') {
+    embed
+      .setTitle(`💥 ⚔️ [BOSS NASCEU] ${boss.name.toUpperCase()} NASCEU AGORA! ⚔️ 💥`)
+      .setColor('#FF0033')
+      .setDescription(`⚔️ O Boss **${boss.name}** acabou de nascer no local **${boss.location}**! Corram pra matar!`)
+      .addFields(
+        { name: '👾 Boss', value: `**${boss.name}**`, inline: true },
+        { name: '📍 Local', value: `**${boss.location}**`, inline: true }
+      )
+      .setFooter({ text: 'BOT Ally • Alerta de Spawn' });
   }
 
   return embed;
