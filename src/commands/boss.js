@@ -20,11 +20,31 @@ export const data = new SlashCommandBuilder()
  * @param {import('discord.js').ChatInputCommandInteraction} interaction 
  */
 export async function execute(interaction) {
+  const activeBosses = db.getBosses();
+  const now = DateTime.now().setZone('America/Sao_Paulo').toMillis();
+
+  // Conjunto de IDs dos bosses que já possuem timer ativo
+  const activeBossIds = new Set(
+    activeBosses
+      .filter(b => b.spawnTimestamp > (now - 15 * 60 * 1000))
+      .map(b => b.bossId)
+  );
+
+  // Filtra apenas os bosses que AINDA NÃO possuem timer agendado
+  const availableBosses = BOSS_LIST.filter(b => !activeBossIds.has(b.id));
+
+  if (availableBosses.length === 0) {
+    return interaction.reply({
+      content: 'ℹ️ **Todos os bosses disponíveis já possuem timers ativos agendados!**\nUse `/bosses` para visualizar a lista ou `/cancelarboss` para remover algum agendamento.',
+      ephemeral: true
+    });
+  }
+
   const selectMenu = new StringSelectMenuBuilder()
     .setCustomId('select_boss')
-    .setPlaceholder('🎯 Escolha um Boss para agendar o timer...')
+    .setPlaceholder(`🎯 Escolha um Boss (${availableBosses.length} disponíveis)...`)
     .addOptions(
-      BOSS_LIST.map(b => ({
+      availableBosses.map(b => ({
         label: `${b.name} (${b.categoryLabel})`,
         description: `Local: ${b.location}`,
         value: b.id
@@ -34,7 +54,7 @@ export async function execute(interaction) {
   const row = new ActionRowBuilder().addComponents(selectMenu);
 
   await interaction.reply({
-    content: '⚔️ **Selecione o Boss desejado no menu abaixo:**',
+    content: '⚔️ **Selecione o Boss desejado no menu abaixo:** *(Bosses com timer ativo não aparecem nesta lista)*',
     components: [row],
     ephemeral: true
   });
@@ -50,6 +70,20 @@ export async function handleSelectMenu(interaction) {
 
   if (!bossObj) {
     return interaction.reply({ content: '❌ Boss não encontrado na lista.', ephemeral: true });
+  }
+
+  // Verifica se o boss já foi agendado enquanto o usuário navegava no menu
+  const activeBosses = db.getBosses();
+  const now = DateTime.now().setZone('America/Sao_Paulo').toMillis();
+  const isAlreadyScheduled = activeBosses.some(
+    b => b.bossId === bossObj.id && b.spawnTimestamp > (now - 15 * 60 * 1000)
+  );
+
+  if (isAlreadyScheduled) {
+    return interaction.reply({
+      content: `❌ **O boss ${bossObj.name} já possui um timer ativo agendado!**`,
+      ephemeral: true
+    });
   }
 
   // Cria o Modal para solicitar o tempo restante em HH:MM
@@ -115,6 +149,21 @@ export async function handleModalSubmit(interaction) {
   }
 
   const now = DateTime.now().setZone('America/Sao_Paulo');
+  const nowMs = now.toMillis();
+
+  // Validação de duplicidade no submit do modal
+  const activeBosses = db.getBosses();
+  const isAlreadyScheduled = activeBosses.some(
+    b => b.bossId === bossObj.id && b.spawnTimestamp > (nowMs - 15 * 60 * 1000)
+  );
+
+  if (isAlreadyScheduled) {
+    return interaction.reply({
+      content: `❌ **O boss ${bossObj.name} já possui um timer ativo agendado!**`,
+      ephemeral: true
+    });
+  }
+
   const spawnDateTime = now.plus({ minutes: totalMinutes });
   const spawnTimestamp = spawnDateTime.toMillis();
 
