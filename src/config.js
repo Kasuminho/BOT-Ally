@@ -6,6 +6,7 @@ export const config = {
   clientId: process.env.CLIENT_ID,
   guildId: process.env.GUILD_ID || null,
   announcementChannelId: process.env.ANNOUNCEMENT_CHANNEL_ID || null,
+  geloAnnouncementChannelId: process.env.GELO_ANNOUNCEMENT_CHANNEL_ID || null,
   bossRoleId: process.env.BOSS_ROLE_ID || null,
 };
 

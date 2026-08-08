@@ -12,6 +12,7 @@ import { createCustomBossEmbed } from '../utils/embeds.js';
 import { config } from '../config.js';
 import { rotateBossTurn, getBossRotationState } from '../utils/rotation.js';
 import { addAuditEntry } from '../utils/audit.js';
+import { getChannelForBoss } from '../services/scheduler.js';
 import { DateTime } from 'luxon';
 
 export const data = new SlashCommandBuilder()
@@ -189,7 +190,8 @@ export async function handleModalSubmit(interaction) {
   const spawnDateTime = now.plus({ minutes: totalMinutes });
   const spawnTimestamp = spawnDateTime.toMillis();
 
-  const targetChannelId = config.announcementChannelId || interaction.channelId;
+  // Determina canal de destino (Canal de Gelo dedicado ou Canal Padrão)
+  const targetChannelId = getChannelForBoss(bossObj) || interaction.channelId;
 
   const bossData = {
     id: `${bossObj.id}_${Date.now()}`,

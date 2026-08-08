@@ -6,19 +6,39 @@ import { config } from '../config.js';
 import { MEMBROS_ROLE_ID } from '../utils/bossList.js';
 
 /**
+ * Retorna se o boss pertence à Masmorra de Gelo
+ * @param {Object} boss 
+ */
+export function isGeloBoss(boss) {
+  if (!boss) return false;
+  return (
+    boss.category === 'gelo' ||
+    (boss.location && /gelo/i.test(boss.location)) ||
+    (boss.bossId && ['dardaloca', 'hotura', 'gatphillian', 'tigdal'].includes(boss.bossId))
+  );
+}
+
+/**
+ * Retorna o ID do canal de destino correto para o boss:
+ * - Se for Gelo e GELO_ANNOUNCEMENT_CHANNEL_ID estiver configurado -> usa o canal de Gelo
+ * - Caso contrário -> usa ANNOUNCEMENT_CHANNEL_ID padrão (ou canal do agendamento)
+ * @param {Object} boss 
+ */
+export function getChannelForBoss(boss) {
+  if (isGeloBoss(boss) && config.geloAnnouncementChannelId) {
+    return config.geloAnnouncementChannelId;
+  }
+  return config.announcementChannelId || boss?.channelId;
+}
+
+/**
  * Retorna a menção de cargo apropriada para o boss:
- * - Se for boss da Masmorra de Gelo (por categoria, id ou localização) -> <@&1526217487274741947> (Membros)
+ * - Se for boss da Masmorra de Gelo -> <@&1526217487274741947> (Membros)
  * - Se for Interserver ou Boss Fixo -> @everyone
  * @param {Object} boss 
  */
 function getPingRoleForBoss(boss) {
-  if (!boss) return '@everyone';
-
-  const isGelo = boss.category === 'gelo' ||
-    (boss.location && /gelo/i.test(boss.location)) ||
-    (boss.bossId && ['dardaloca', 'hotura', 'gatphillian', 'tigdal'].includes(boss.bossId));
-
-  if (isGelo) {
+  if (isGeloBoss(boss)) {
     return `<@&${MEMBROS_ROLE_ID}>`;
   }
   return '@everyone';
@@ -124,8 +144,8 @@ async function checkCustomBossReminders(client) {
 
     activeBosses.push(boss);
 
-    // Prioriza sempre o canal de avisos global configurado no .env
-    const channelId = config.announcementChannelId || boss.channelId;
+    // Determina o canal de destino (Canal de Gelo dedicado ou Canal Padrão)
+    const channelId = getChannelForBoss(boss);
     if (!channelId) continue;
 
     const pingRole = getPingRoleForBoss(boss);
