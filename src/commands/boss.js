@@ -180,8 +180,8 @@ export async function handleModalSubmit(interaction) {
     spawnTimestamp,
     createdBy: interaction.user.tag,
     channelId: targetChannelId,
-    notified20m: totalMinutes <= 20, // se faltar 20 min ou menos, marca como já notificado o aviso prévio
-    notifiedSpawn: false
+    notified20m: totalMinutes <= 20, // se faltar 20 min ou menos, marca como notificado o aviso de 20m
+    notified3m: totalMinutes <= 3    // se faltar 3 min ou menos, marca como notificado o aviso de 3m
   };
 
   db.addBoss(bossData);
