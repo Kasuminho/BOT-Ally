@@ -3,12 +3,19 @@ import { DateTime } from 'luxon';
 import { db } from '../database/db.js';
 import { createDailyFixedEmbed, createCustomBossEmbed } from '../utils/embeds.js';
 import { config } from '../config.js';
+import { MEMBROS_ROLE_ID } from '../utils/bossList.js';
 
 /**
- * Retorna a menção de cargo ou @everyone se não houver BOSS_ROLE_ID
+ * Retorna a menção de cargo apropriada para o boss:
+ * - Se for boss da Masmorra de Gelo -> <@&1526217487274741947> (Membros)
+ * - Se for Interserver ou Boss Fixo -> @everyone
+ * @param {Object} boss 
  */
-function getPingRole() {
-  return config.bossRoleId ? `<@&${config.bossRoleId}>` : '@everyone';
+function getPingRoleForBoss(boss) {
+  if (boss && boss.category === 'gelo') {
+    return `<@&${MEMBROS_ROLE_ID}>`;
+  }
+  return '@everyone';
 }
 
 /**
@@ -43,7 +50,7 @@ export function initScheduler(client) {
 }
 
 /**
- * Envia o aviso fixo único para os Bosses das 23:00 (TA 2 - Ducas, TA 3 - Dergio, TA 4 - Turga/Gillaot/Frezam)
+ * Envia o aviso fixo único para os Bosses das 23:00 (Interserver -> @everyone)
  * @param {import('discord.js').Client} client 
  * @param {'REMINDER_20M' | 'SPAWN'} noticeType 
  */
@@ -58,7 +65,7 @@ async function sendDailyFixedAnnouncement(client, noticeType) {
     const channel = await client.channels.fetch(channelId);
     if (channel && channel.isTextBased()) {
       const embed = createDailyFixedEmbed(noticeType);
-      const pingRole = getPingRole();
+      const pingRole = '@everyone';
       const contentText = noticeType === 'REMINDER_20M'
         ? `🚨 **[LEMBRETE 20M]** Bosses Fixos das 23:00! ${pingRole}`
         : `🔥 **[BOSSES NASCERAM]** Bosses Fixos das 23:00! ${pingRole}`;
@@ -100,7 +107,7 @@ async function checkCustomBossReminders(client) {
     const channelId = boss.channelId || config.announcementChannelId;
     if (!channelId) continue;
 
-    const pingRole = getPingRole();
+    const pingRole = getPingRoleForBoss(boss);
 
     // Aviso de 20 Minutos Antes (janela entre 2 e 20 minutos)
     if (diffMinutes <= 20 && diffMinutes > 2 && !boss.notified20m) {
@@ -116,7 +123,7 @@ async function checkCustomBossReminders(client) {
             content: `🚨 **[AVISO 20M]** O Boss **${boss.name}** vai nascer em 20 minutos! ${pingRole}`,
             embeds: [embed]
           });
-          console.log(`✅ [SCHEDULER] Lembrete 20M enviado para boss ${boss.name}`);
+          console.log(`✅ [SCHEDULER] Lembrete 20M enviado para boss ${boss.name} (Ping: ${pingRole})`);
         }
       } catch (err) {
         console.error(`❌ [SCHEDULER] Erro ao enviar aviso 20M para ${boss.name}:`, err);
@@ -136,7 +143,7 @@ async function checkCustomBossReminders(client) {
             content: `🔥 **[BOSS NASCEU]** O Boss **${boss.name}** NASCEU AGORA! ${pingRole}`,
             embeds: [embed]
           });
-          console.log(`✅ [SCHEDULER] Aviso SPAWN enviado para boss ${boss.name}`);
+          console.log(`✅ [SCHEDULER] Aviso SPAWN enviado para boss ${boss.name} (Ping: ${pingRole})`);
         }
       } catch (err) {
         console.error(`❌ [SCHEDULER] Erro ao enviar aviso SPAWN para ${boss.name}:`, err);

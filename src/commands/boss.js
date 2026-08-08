@@ -25,7 +25,7 @@ export async function execute(interaction) {
     .setPlaceholder('🎯 Escolha um Boss para agendar o timer...')
     .addOptions(
       BOSS_LIST.map(b => ({
-        label: b.name,
+        label: `${b.name} (${b.categoryLabel})`,
         description: `Local: ${b.location}`,
         value: b.id
       }))
@@ -123,6 +123,8 @@ export async function handleModalSubmit(interaction) {
     bossId: bossObj.id,
     name: bossObj.name,
     location: bossObj.location,
+    category: bossObj.category,
+    categoryLabel: bossObj.categoryLabel,
     spawnTimestamp,
     createdBy: interaction.user.tag,
     channelId: interaction.channelId,
@@ -136,7 +138,7 @@ export async function handleModalSubmit(interaction) {
 
   // Resposta EFÊMERA (apenas para quem usou o comando)
   await interaction.reply({
-    content: `📢 **[BOSS RASTREADO]** Timer ativado para **${bossObj.name}**!`,
+    content: `📢 **[BOSS RASTREADO]** Timer ativado para **${bossObj.name}** (${bossObj.categoryLabel})!`,
     embeds: [embed],
     ephemeral: true
   });

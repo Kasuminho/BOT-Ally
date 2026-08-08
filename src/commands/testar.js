@@ -1,10 +1,10 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { config } from '../config.js';
-import { createDailyFixedEmbed } from '../utils/embeds.js';
+import { createDailyFixedEmbed, createCustomBossEmbed } from '../utils/embeds.js';
 
 export const data = new SlashCommandBuilder()
   .setName('testar')
-  .setDescription('Envia um aviso de teste no canal de avisos (SEM marcar @everyone).');
+  .setDescription('Envia um aviso de teste no canal de avisos (SEM marcar @everyone ou cargos).');
 
 export async function execute(interaction) {
   const channelId = config.announcementChannelId;
@@ -26,22 +26,31 @@ export async function execute(interaction) {
       });
     }
 
-    // Embed de teste bonito sem marcar @everyone
-    const testEmbed = createDailyFixedEmbed('REMINDER_20M');
+    // Embeds no formato idêntico ao oficial, sem qualquer marcação/ping de cargo
+    const testFixedEmbed = createDailyFixedEmbed('REMINDER_20M');
+
+    const sampleBoss = {
+      name: 'Dardaloca',
+      location: 'Caverna de Gelo 3 Sudoeste',
+      spawnTimestamp: Date.now() + 20 * 60 * 1000,
+      createdBy: interaction.user.tag,
+      categoryLabel: '❄️ Servidor (Gelo)'
+    };
+    const testCustomEmbed = createCustomBossEmbed(sampleBoss, 'REMINDER_20M');
 
     await channel.send({
-      content: '🧪 **[AVISO DE TESTE]** Testando formato do anúncio (Sem menção de @everyone):',
-      embeds: [testEmbed]
+      content: '🧪 **[TESTE DE LAYOUT E PERMISSÕES]** *(Nenhum cargo ou @everyone foi marcado neste teste)*',
+      embeds: [testFixedEmbed, testCustomEmbed]
     });
 
     await interaction.reply({
-      content: `✅ **Aviso de teste enviado com sucesso no canal <#${channelId}>!** (Sem marcar @everyone).`,
+      content: `✅ **Aviso de teste enviado com sucesso no canal <#${channelId}>!**\nVerifique se o bot conseguiu postar os Embeds corretamente.`,
       ephemeral: true
     });
   } catch (error) {
     console.error('❌ Erro ao enviar aviso de teste:', error);
     await interaction.reply({
-      content: '❌ Ocorreu um erro ao tentar enviar o aviso de teste.',
+      content: '❌ Ocorreu um erro ao tentar enviar o aviso de teste. Verifique se o bot tem permissão de enviar mensagens e incorporar links no canal.',
       ephemeral: true
     });
   }
