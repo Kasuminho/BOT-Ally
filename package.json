@@ -1,6 +1,6 @@
 {
   "name": "bot-ally",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Bot do Discord para Rastreamento de Bosses, Rotação de Drops e Auditoria - Ally",
   "main": "src/index.js",
   "type": "module",

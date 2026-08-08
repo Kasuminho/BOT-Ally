@@ -39,6 +39,13 @@ export const data = new SlashCommandBuilder()
       )
       .addSubcommand(sub =>
         sub
+          .setName('editar')
+          .setDescription('Altera/Renomeia uma TAG existente mantendo a posição e histórico sem quebrar a fila.')
+          .addStringOption(opt => opt.setName('antiga').setDescription('Nome da TAG atual a ser substituída').setRequired(true))
+          .addStringOption(opt => opt.setName('nova').setDescription('Novo nome da TAG').setRequired(true))
+      )
+      .addSubcommand(sub =>
+        sub
           .setName('remover')
           .setDescription('Remove uma TAG da fila de rotação.')
           .addStringOption(opt => opt.setName('nome').setDescription('Nome da TAG').setRequired(true))
@@ -93,9 +100,9 @@ export async function execute(interaction) {
   // 3. Gerenciamento de Tags (Fila)
   if (subcommandGroup === 'tags') {
     const rot = rotationDb.get();
-    const tagNome = interaction.options.getString('nome').trim().toUpperCase();
 
     if (subcommand === 'adicionar') {
+      const tagNome = interaction.options.getString('nome').trim().toUpperCase();
       if (rot.tags.includes(tagNome)) {
         return interaction.reply({ content: `❌ A TAG \`${tagNome}\` já está na fila!`, ephemeral: true });
       }
@@ -109,7 +116,44 @@ export async function execute(interaction) {
         content: `✅ **TAG \`${tagNome}\` adicionada com sucesso à fila de rotação!**\nFila atual: [ ${rot.tags.join(' ➡️ ')} ]`,
         ephemeral: true
       });
+    } else if (subcommand === 'editar') {
+      const antiga = interaction.options.getString('antiga').trim().toUpperCase();
+      const nova = interaction.options.getString('nova').trim().toUpperCase();
+
+      const index = rot.tags.indexOf(antiga);
+      if (index === -1) {
+        return interaction.reply({
+          content: `❌ A TAG \`${antiga}\` não foi encontrada na fila atual! [ ${rot.tags.join(' ➡️ ')} ]`,
+          ephemeral: true
+        });
+      }
+
+      // Substitui na mesma posição da fila sem alterar a sequência
+      rot.tags[index] = nova;
+
+      // Atualiza nos estados salvos de cada boss se a tag for a última ou próxima
+      if (rot.bosses) {
+        Object.keys(rot.bosses).forEach(bossId => {
+          if (rot.bosses[bossId].lastTag === antiga) {
+            rot.bosses[bossId].lastTag = nova;
+          }
+          if (rot.bosses[bossId].nextTag === antiga) {
+            rot.bosses[bossId].nextTag = nova;
+          }
+        });
+      }
+
+      rotationDb.save(rot);
+
+      await updateRotationPanel(interaction.client);
+      addAuditEntry(interaction.user.tag, interaction.user.id, `Alterou a TAG ${antiga} para ${nova} na fila de rotação`);
+
+      return interaction.reply({
+        content: `✏️ **TAG \`${antiga}\` alterada para \`${nova}\` com sucesso!**\nA posição e o histórico de turnos foram atualizados sem quebrar a fila.\nFila atual: [ ${rot.tags.join(' ➡️ ')} ]`,
+        ephemeral: true
+      });
     } else if (subcommand === 'remover') {
+      const tagNome = interaction.options.getString('nome').trim().toUpperCase();
       if (rot.tags.length <= 1) {
         return interaction.reply({ content: '❌ A fila precisa ter pelo menos 1 TAG!', ephemeral: true });
       }
