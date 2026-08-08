@@ -14,13 +14,14 @@ export function createDailyFixedEmbed(noticeType) {
       .setTitle('🚨 ⚔️ [ALERTA 20 MINUTOS] BOSSES FIXOS DAS 23:00 (FFA) ⚔️ 🚨')
       .setColor('#FF9900')
       .setDescription(
-        '⏰ **Atenção Ally!** Os Bosses diários das **23:00** vão nascer em **20 minutos**!\n' +
-        ' Preparem os times, suprimentos e organizem a call!'
+        '⏰ **Atenção Guild Ally!** Os Bosses diários das **23:00** vão nascer em **20 minutos**!\n' +
+        ' Preparem os times, suprimentos e entrem na call de PVP!'
       )
       .addFields(
         { name: '🏰 TA 2', value: '👑 **Ducas**', inline: true },
         { name: '🏰 TA 3', value: '👑 **Dergio**', inline: true },
-        { name: '🏰 TA 4', value: '👑 **Turga / Gillaot / Frezam**', inline: true }
+        { name: '🏰 TA 4', value: '👑 **Turga / Gillaot / Frezam**', inline: true },
+        { name: '🎯 Regra de Drop', value: '🔥 **FFA (Free For All)**', inline: false }
       )
       .setFooter({ text: `${getRandomJoke()}` });
   } else if (noticeType === 'REMINDER_5M') {
@@ -29,26 +30,28 @@ export function createDailyFixedEmbed(noticeType) {
       .setColor('#FF5500')
       .setDescription(
         '🚨 **ATENÇÃO GUILD ALLY!** Todos os Bosses fixos das **23:00** nascem em **5 MINUTOS**!\n' +
-        ' Corram para os mapas!'
+        ' Corram para os mapas da Torre da Arrogância!'
       )
       .addFields(
         { name: '🏰 TA 2', value: '🔥 **Ducas**', inline: true },
         { name: '🏰 TA 3', value: '🔥 **Dergio**', inline: true },
-        { name: '🏰 TA 4', value: '🔥 **Turga / Gillaot / Frezam**', inline: true }
+        { name: '🏰 TA 4', value: '🔥 **Turga / Gillaot / Frezam**', inline: true },
+        { name: '🎯 Regra de Drop', value: '🔥 **FFA (Free For All)**', inline: false }
       )
       .setFooter({ text: `${getRandomJoke()}` });
   } else {
     embed
-      .setTitle('⚔️ 🔥 [BOSSES NASCERAM] TA 2 / TA 3 / TA 4 NASCERAM! (FFA) 🔥 ⚔️')
+      .setTitle('💥 ⚔️ 🔥 [BOSSES NASCERAM] TA 2 / TA 3 / TA 4 NASCERAM! (FFA) 🔥 ⚔️ 💥')
       .setColor('#FF0033')
       .setDescription(
         '⚔️ **ATENÇÃO GUILD ALLY!** Todos os Bosses fixos das **23:00** NASCERAM AGORA!\n' +
-        ' Matem os Bosses e garantam os loots!'
+        ' Corram para os mapas, garantam o kill e o loot!'
       )
       .addFields(
         { name: '🏰 TA 2', value: '💥 **Ducas**', inline: true },
         { name: '🏰 TA 3', value: '💥 **Dergio**', inline: true },
-        { name: '🏰 TA 4', value: '💥 **Turga / Gillaot / Frezam**', inline: true }
+        { name: '🏰 TA 4', value: '💥 **Turga / Gillaot / Frezam**', inline: true },
+        { name: '🎯 Regra de Drop', value: '🔥 **FFA (Free For All)**', inline: false }
       )
       .setFooter({ text: `${getRandomJoke()}` });
   }
@@ -57,7 +60,7 @@ export function createDailyFixedEmbed(noticeType) {
 }
 
 /**
- * Cria Embed para agendamentos individuais dos Outros Bosses
+ * Cria Embed elegante para os avisos de nascimento e lembretes dos Bosses
  * @param {Object} boss 
  * @param {'REGISTERED' | 'REMINDER_20M' | 'REMINDER_5M' | 'SPAWN'} noticeType 
  */
@@ -69,17 +72,19 @@ export function createCustomBossEmbed(boss, noticeType) {
 
   if (noticeType === 'REGISTERED') {
     embed
-      .setTitle(`✅ 🎯 BOSS AGENDADO COM SUCESSO!`)
+      .setTitle(`✅ 🎯 BOSS RASTREADO COM SUCESSO!`)
       .setColor('#00FFCC')
-      .setDescription(`O timer para o boss **${boss.name}** foi registrado.`)
+      .setDescription(`O timer para o boss **${boss.name}** foi registrado com sucesso.`)
       .addFields(
         { name: '👾 Boss', value: `**${boss.name}**`, inline: true },
         { name: '📍 Local', value: `**${boss.location}**`, inline: true },
-        { name: '⏰ Horário Previsto', value: `<t:${unixSec}:F> (<t:${unixSec}:R>)`, inline: false }
+        { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:F> (<t:${unixSec}:R>)`, inline: false }
       );
 
     if (isInterserver && state) {
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `**\`${state.nextTag}\`** *(Última: ${state.lastTag})*`, inline: true });
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `👑 **\`${state.nextTag}\`** *(Última: ${state.lastTag})*`, inline: true });
+    } else {
+      embed.addFields({ name: '🛡️ Tipo', value: `**Servidor (Gelo)**`, inline: true });
     }
 
     embed
@@ -98,7 +103,7 @@ export function createCustomBossEmbed(boss, noticeType) {
       );
 
     if (isInterserver && state) {
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `**\`${state.nextTag}\`**`, inline: true });
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `👑 **\`${state.nextTag}\`**`, inline: true });
     }
 
     embed.setFooter({ text: `${getRandomJoke()}` });
@@ -115,23 +120,23 @@ export function createCustomBossEmbed(boss, noticeType) {
       );
 
     if (isInterserver && state) {
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `**\`${state.nextTag}\`**`, inline: true });
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `👑 **\`${state.nextTag}\`**`, inline: true });
     }
 
     embed.setFooter({ text: `${getRandomJoke()}` });
 
   } else if (noticeType === 'SPAWN') {
     embed
-      .setTitle(`💥 ⚔️ [BOSS NASCEU] ${boss.name.toUpperCase()} NASCEU AGORA! ⚔️ 💥`)
+      .setTitle(`💥 ⚔️ 🔥 [BOSS NASCEU] ${boss.name.toUpperCase()} NASCEU AGORA! 🔥 ⚔️ 💥`)
       .setColor('#FF0033')
-      .setDescription(`⚔️ O Boss **${boss.name}** acabou de nascer no local **${boss.location}**! Corram pra matar!`)
+      .setDescription(`⚔️ **ATENÇÃO ALLY!** O Boss **${boss.name}** acabou de nascer no local **${boss.location}**!\nUnam os grupos e corram para o mapa!`)
       .addFields(
         { name: '👾 Boss', value: `**${boss.name}**`, inline: true },
         { name: '📍 Local', value: `**${boss.location}**`, inline: true }
       );
 
     if (isInterserver && state) {
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `**\`${state.nextTag}\`**`, inline: true });
+      embed.addFields({ name: '🎯 TAG Atual do Drop (União)', value: `👑 **\`${state.lastTag}\`** *(Próxima: ${state.nextTag})*`, inline: false });
     }
 
     embed.setFooter({ text: `${getRandomJoke()}` });
