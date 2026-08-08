@@ -5,6 +5,13 @@ import { createDailyFixedEmbed, createCustomBossEmbed } from '../utils/embeds.js
 import { config } from '../config.js';
 
 /**
+ * Retorna a menção de cargo ou @everyone se não houver BOSS_ROLE_ID
+ */
+function getPingRole() {
+  return config.bossRoleId ? `<@&${config.bossRoleId}>` : '@everyone';
+}
+
+/**
  * Inicializa o serviço de agendamento do BOT Ally
  * @param {import('discord.js').Client} client 
  */
@@ -51,7 +58,7 @@ async function sendDailyFixedAnnouncement(client, noticeType) {
     const channel = await client.channels.fetch(channelId);
     if (channel && channel.isTextBased()) {
       const embed = createDailyFixedEmbed(noticeType);
-      const pingRole = config.bossRoleId ? `<@&${config.bossRoleId}>` : '@everyone';
+      const pingRole = getPingRole();
       const contentText = noticeType === 'REMINDER_20M'
         ? `🚨 **[LEMBRETE 20M]** Bosses Fixos das 23:00! ${pingRole}`
         : `🔥 **[BOSSES NASCERAM]** Bosses Fixos das 23:00! ${pingRole}`;
@@ -93,7 +100,7 @@ async function checkCustomBossReminders(client) {
     const channelId = boss.channelId || config.announcementChannelId;
     if (!channelId) continue;
 
-    const pingRole = config.bossRoleId ? `<@&${config.bossRoleId}>` : '';
+    const pingRole = getPingRole();
 
     // Aviso de 20 Minutos Antes (janela entre 2 e 20 minutos)
     if (diffMinutes <= 20 && diffMinutes > 2 && !boss.notified20m) {
