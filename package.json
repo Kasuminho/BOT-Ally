@@ -1,6 +1,6 @@
 {
   "name": "bot-ally",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Bot do Discord para Rastreamento e Alerta de Bosses - Ally",
   "main": "src/index.js",
   "type": "module",

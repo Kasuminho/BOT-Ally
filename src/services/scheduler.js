@@ -7,12 +7,18 @@ import { MEMBROS_ROLE_ID } from '../utils/bossList.js';
 
 /**
  * Retorna a menção de cargo apropriada para o boss:
- * - Se for boss da Masmorra de Gelo -> <@&1526217487274741947> (Membros)
+ * - Se for boss da Masmorra de Gelo (por categoria, id ou localização) -> <@&1526217487274741947> (Membros)
  * - Se for Interserver ou Boss Fixo -> @everyone
  * @param {Object} boss 
  */
 function getPingRoleForBoss(boss) {
-  if (boss && boss.category === 'gelo') {
+  if (!boss) return '@everyone';
+
+  const isGelo = boss.category === 'gelo' ||
+    (boss.location && /gelo/i.test(boss.location)) ||
+    (boss.bossId && ['dardaloca', 'hotura', 'gatphillian', 'tigdal'].includes(boss.bossId));
+
+  if (isGelo) {
     return `<@&${MEMBROS_ROLE_ID}>`;
   }
   return '@everyone';
@@ -104,7 +110,8 @@ async function checkCustomBossReminders(client) {
 
     activeBosses.push(boss);
 
-    const channelId = boss.channelId || config.announcementChannelId;
+    // Prioriza sempre o canal de avisos global configurado no .env
+    const channelId = config.announcementChannelId || boss.channelId;
     if (!channelId) continue;
 
     const pingRole = getPingRoleForBoss(boss);
@@ -123,7 +130,7 @@ async function checkCustomBossReminders(client) {
             content: `🚨 **[AVISO 20M]** O Boss **${boss.name}** vai nascer em 20 minutos! ${pingRole}`,
             embeds: [embed]
           });
-          console.log(`✅ [SCHEDULER] Lembrete 20M enviado para boss ${boss.name} (Ping: ${pingRole})`);
+          console.log(`✅ [SCHEDULER] Lembrete 20M enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
         }
       } catch (err) {
         console.error(`❌ [SCHEDULER] Erro ao enviar aviso 20M para ${boss.name}:`, err);
@@ -143,7 +150,7 @@ async function checkCustomBossReminders(client) {
             content: `🔥 **[BOSS NASCEU]** O Boss **${boss.name}** NASCEU AGORA! ${pingRole}`,
             embeds: [embed]
           });
-          console.log(`✅ [SCHEDULER] Aviso SPAWN enviado para boss ${boss.name} (Ping: ${pingRole})`);
+          console.log(`✅ [SCHEDULER] Aviso SPAWN enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
         }
       } catch (err) {
         console.error(`❌ [SCHEDULER] Erro ao enviar aviso SPAWN para ${boss.name}:`, err);

@@ -9,6 +9,7 @@ import {
 import { BOSS_LIST } from '../utils/bossList.js';
 import { db } from '../database/db.js';
 import { createCustomBossEmbed } from '../utils/embeds.js';
+import { config } from '../config.js';
 import { DateTime } from 'luxon';
 
 export const data = new SlashCommandBuilder()
@@ -167,6 +168,8 @@ export async function handleModalSubmit(interaction) {
   const spawnDateTime = now.plus({ minutes: totalMinutes });
   const spawnTimestamp = spawnDateTime.toMillis();
 
+  const targetChannelId = config.announcementChannelId || interaction.channelId;
+
   const bossData = {
     id: `${bossObj.id}_${Date.now()}`,
     bossId: bossObj.id,
@@ -176,7 +179,7 @@ export async function handleModalSubmit(interaction) {
     categoryLabel: bossObj.categoryLabel,
     spawnTimestamp,
     createdBy: interaction.user.tag,
-    channelId: interaction.channelId,
+    channelId: targetChannelId,
     notified20m: totalMinutes <= 20, // se faltar 20 min ou menos, marca como já notificado o aviso prévio
     notifiedSpawn: false
   };
@@ -187,7 +190,7 @@ export async function handleModalSubmit(interaction) {
 
   // Resposta EFÊMERA (apenas para quem usou o comando)
   await interaction.reply({
-    content: `📢 **[BOSS RASTREADO]** Timer ativado para **${bossObj.name}** (${bossObj.categoryLabel})!`,
+    content: `📢 **[BOSS RASTREADO]** Timer ativado para **${bossObj.name}** (${bossObj.categoryLabel})!\nOs avisos serão enviados no canal de avisos <#${targetChannelId}>.`,
     embeds: [embed],
     ephemeral: true
   });
