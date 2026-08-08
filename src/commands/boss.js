@@ -134,8 +134,10 @@ export async function handleModalSubmit(interaction) {
 
   const embed = createCustomBossEmbed(bossData, 'REGISTERED');
 
+  // Resposta EFÊMERA (apenas para quem usou o comando)
   await interaction.reply({
     content: `📢 **[BOSS RASTREADO]** Timer ativado para **${bossObj.name}**!`,
-    embeds: [embed]
+    embeds: [embed],
+    ephemeral: true
   });
 }

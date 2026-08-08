@@ -2,10 +2,12 @@ import { Client, GatewayIntentBits, Collection, ActivityType } from 'discord.js'
 import { config, validateConfig } from './config.js';
 import { initScheduler } from './services/scheduler.js';
 import { registerCommands } from './deploy-commands.js';
+import { isAuthorized } from './middleware/auth.js';
 
 import * as bossCmd from './commands/boss.js';
 import * as listarCmd from './commands/listarBosses.js';
 import * as cancelarCmd from './commands/cancelarBoss.js';
+import * as testarCmd from './commands/testar.js';
 
 validateConfig();
 
@@ -20,7 +22,7 @@ const client = new Client({
 
 // Registra os comandos na coleção
 client.commands = new Collection();
-const commandsList = [bossCmd, listarCmd, cancelarCmd];
+const commandsList = [bossCmd, listarCmd, cancelarCmd, testarCmd];
 
 for (const cmd of commandsList) {
   client.commands.set(cmd.data.name, cmd);
@@ -49,6 +51,19 @@ client.once('ready', async () => {
 // Manipulação centralizada de interações no Discord
 client.on('interactionCreate', async interaction => {
   try {
+    // Verificação de Autorização (ID do Usuário 273600843251712020 ou Staff/Admin)
+    if (!isAuthorized(interaction)) {
+      const unauthorizedMessage = {
+        content: '❌ **Acesso negado!** Apenas membros da **Staff** ou administradores podem utilizar os comandos do BOT Ally.',
+        ephemeral: true
+      };
+      if (interaction.replied || interaction.deferred) {
+        return await interaction.followUp(unauthorizedMessage);
+      } else {
+        return await interaction.reply(unauthorizedMessage);
+      }
+    }
+
     // 1. Slash Commands
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);

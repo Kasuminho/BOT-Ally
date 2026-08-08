@@ -17,6 +17,7 @@ export async function execute(interaction) {
   const embed = createBossListEmbed(activeBosses);
 
   await interaction.reply({
-    embeds: [embed]
+    embeds: [embed],
+    ephemeral: true
   });
 }
