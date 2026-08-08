@@ -3,6 +3,7 @@ import { config, validateConfig } from './config.js';
 import { initScheduler } from './services/scheduler.js';
 import { registerCommands } from './deploy-commands.js';
 import { isAuthorized } from './middleware/auth.js';
+import { updateRotationPanel } from './utils/rotation.js';
 
 import * as bossCmd from './commands/boss.js';
 import * as listarCmd from './commands/listarBosses.js';
@@ -34,7 +35,7 @@ for (const cmd of commandsList) {
 // Evento quando o bot está pronto
 client.once('ready', async () => {
   console.log(`==========================================`);
-  console.log(`🤖 BOT Ally v2.0 conectado como: ${client.user.tag}`);
+  console.log(`🤖 BOT Ally conectado como: ${client.user.tag}`);
   console.log(`📢 Canal de Avisos: ${config.announcementChannelId || 'Não configurado'}`);
   console.log(`==========================================`);
 
@@ -46,6 +47,9 @@ client.once('ready', async () => {
     activities: [{ name: 'Gerenciando Bosses & Rotações Ally ⚔️', type: ActivityType.Custom }],
     status: 'online'
   });
+
+  // Atualizar imediatamente a mensagem fixa do painel de rotação ao iniciar
+  await updateRotationPanel(client);
 
   // Inicializar o Scheduler (23:00 Fixo & Timers de Outros Bosses)
   initScheduler(client);
