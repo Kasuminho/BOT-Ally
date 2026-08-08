@@ -1,0 +1,27 @@
+{
+  "name": "bot-ally",
+  "version": "1.0.0",
+  "description": "Bot do Discord para Rastreamento e Alerta de Bosses - Ally",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy-commands": "node src/deploy-commands.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "boss",
+    "ally",
+    "timer"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7",
+    "luxon": "^3.5.0",
+    "node-cron": "^3.0.3"
+  }
+}
