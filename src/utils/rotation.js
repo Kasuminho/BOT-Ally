@@ -175,14 +175,14 @@ export async function updateRotationPanel(client) {
 }
 
 /**
- * Gera o Embed do Painel Fixo de Rotação de Drops
+ * Gera o Embed do Painel Fixo de Rotação de Drops (Exclui bosses fixos que são FFA)
  */
 export function createPanelEmbed() {
   const rot = rotationDb.get();
   const tags = rot.tags || DEFAULT_TAGS;
   const now = DateTime.now().setZone('America/Sao_Paulo').toFormat('dd/MM/yyyy HH:mm');
 
-  // Filtra bosses de TA e Grotesca
+  // Filtra bosses de TA e Grotesca (excluindo os fixos das 23h que são FFA)
   const taGrotescaBosses = BOSS_LIST.filter(b => b.category === 'interserver');
 
   let taText = '';
@@ -199,18 +199,13 @@ export function createPanelEmbed() {
     }
   });
 
-  // Adiciona o Boss Fixo das 23:00 (TA 2 / 3 / 4)
-  const fixedState = getBossRotationState('fixed_23h');
-  const fixedLine = `• **BOSSES FIXOS 23:00** (Ducas / Dergio / Turga)\n  └ 🎯 **Próxima:** \`${fixedState.nextTag}\` | 🕒 **Última:** \`${fixedState.lastTag}\`\n`;
-  taText = fixedLine + taText;
-
   const embed = new EmbedBuilder()
     .setTitle('📜 ⚔️ PAINEL OFICIAL DE ROTAÇÃO DE DROPS - UNIÃO ⚔️ 📜')
     .setColor('#9933FF')
     .setDescription(
       `**Última Atualização:** \`${now}\`\n` +
       `🔄 **Sequência de Tags:** [ ${tags.map(t => `\`${t}\``).join(' ➡️ ')} ]\n\n` +
-      `*Atenção: A rodada rotaciona automaticamente a cada ciclo de spawn!*`
+      `*Atenção: A rodada rotaciona automaticamente a cada ciclo de spawn dos bosses de TA/Grotesca. (Bosses fixos das 23h são FFA).*`
     )
     .addFields(
       { name: '🏰 BOSSES DE TA (Torre da Arrogância)', value: taText || 'Nenhum', inline: false },

@@ -3,16 +3,15 @@ import { getRandomJoke } from './jokes.js';
 import { getBossRotationState } from './rotation.js';
 
 /**
- * Cria o Embed "enfeitado" para o aviso diário fixo das 23:00 (TA 2 / TA 3 / TA 4)
+ * Cria o Embed "enfeitado" para o aviso diário fixo das 23:00 (TA 2 / TA 3 / TA 4 - FFA)
  * @param {'REMINDER_20M' | 'REMINDER_5M' | 'SPAWN'} noticeType 
  */
 export function createDailyFixedEmbed(noticeType) {
   const embed = new EmbedBuilder().setTimestamp();
-  const state = getBossRotationState('fixed_23h');
 
   if (noticeType === 'REMINDER_20M') {
     embed
-      .setTitle('🚨 ⚔️ [ALERTA 20 MINUTOS] BOSSES FIXOS DAS 23:00 ⚔️ 🚨')
+      .setTitle('🚨 ⚔️ [ALERTA 20 MINUTOS] BOSSES FIXOS DAS 23:00 (FFA) ⚔️ 🚨')
       .setColor('#FF9900')
       .setDescription(
         '⏰ **Atenção Ally!** Os Bosses diários das **23:00** vão nascer em **20 minutos**!\n' +
@@ -21,13 +20,12 @@ export function createDailyFixedEmbed(noticeType) {
       .addFields(
         { name: '🏰 TA 2', value: '👑 **Ducas**', inline: true },
         { name: '🏰 TA 3', value: '👑 **Dergio**', inline: true },
-        { name: '🏰 TA 4', value: '👑 **Turga / Gillaot / Frezam**', inline: true },
-        { name: '🎯 Vez do Drop (União)', value: `**\`${state.nextTag}\`** *(Última: ${state.lastTag})*`, inline: false }
+        { name: '🏰 TA 4', value: '👑 **Turga / Gillaot / Frezam**', inline: true }
       )
       .setFooter({ text: `${getRandomJoke()}` });
   } else if (noticeType === 'REMINDER_5M') {
     embed
-      .setTitle('🔥 ⚔️ [ALERTA 5 MINUTOS] BOSSES FIXOS NASCENDO EM BREVE! ⚔️ 🔥')
+      .setTitle('🔥 ⚔️ [ALERTA 5 MINUTOS] BOSSES FIXOS NASCENDO EM BREVE! (FFA) ⚔️ 🔥')
       .setColor('#FF5500')
       .setDescription(
         '🚨 **ATENÇÃO GUILD ALLY!** Todos os Bosses fixos das **23:00** nascem em **5 MINUTOS**!\n' +
@@ -36,13 +34,12 @@ export function createDailyFixedEmbed(noticeType) {
       .addFields(
         { name: '🏰 TA 2', value: '🔥 **Ducas**', inline: true },
         { name: '🏰 TA 3', value: '🔥 **Dergio**', inline: true },
-        { name: '🏰 TA 4', value: '🔥 **Turga / Gillaot / Frezam**', inline: true },
-        { name: '🎯 Vez do Drop (União)', value: `**\`${state.nextTag}\`** *(Última: ${state.lastTag})*`, inline: false }
+        { name: '🏰 TA 4', value: '🔥 **Turga / Gillaot / Frezam**', inline: true }
       )
       .setFooter({ text: `${getRandomJoke()}` });
   } else {
     embed
-      .setTitle('⚔️ 🔥 [BOSSES NASCERAM] TA 2 / TA 3 / TA 4 NASCERAM! 🔥 ⚔️')
+      .setTitle('⚔️ 🔥 [BOSSES NASCERAM] TA 2 / TA 3 / TA 4 NASCERAM! (FFA) 🔥 ⚔️')
       .setColor('#FF0033')
       .setDescription(
         '⚔️ **ATENÇÃO GUILD ALLY!** Todos os Bosses fixos das **23:00** NASCERAM AGORA!\n' +
@@ -51,8 +48,7 @@ export function createDailyFixedEmbed(noticeType) {
       .addFields(
         { name: '🏰 TA 2', value: '💥 **Ducas**', inline: true },
         { name: '🏰 TA 3', value: '💥 **Dergio**', inline: true },
-        { name: '🏰 TA 4', value: '💥 **Turga / Gillaot / Frezam**', inline: true },
-        { name: '🎯 Vez do Drop (União)', value: `**\`${state.nextTag}\`**`, inline: false }
+        { name: '🏰 TA 4', value: '💥 **Turga / Gillaot / Frezam**', inline: true }
       )
       .setFooter({ text: `${getRandomJoke()}` });
   }

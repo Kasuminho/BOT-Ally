@@ -23,7 +23,6 @@ export const data = new SlashCommandBuilder()
           .setDescription('Selecione o boss para avançar a vez da TAG')
           .setRequired(true)
           .addChoices(
-            { name: '🌟 BOSSES FIXOS 23:00 (Ducas / Dergio / Turga)', value: 'fixed_23h' },
             ...taGrotescaBosses.map(b => ({ name: `${b.name} (${b.location})`, value: b.id }))
           )
       )
@@ -74,12 +73,8 @@ export async function execute(interaction) {
   // 2. Girar Turno do Boss Manualmente
   if (subcommand === 'girar') {
     const bossId = interaction.options.getString('boss');
-    let bossName = 'Bosses Fixos 23:00';
-
-    if (bossId !== 'fixed_23h') {
-      const bObj = BOSS_LIST.find(b => b.id === bossId);
-      if (bObj) bossName = bObj.name;
-    }
+    const bObj = BOSS_LIST.find(b => b.id === bossId);
+    const bossName = bObj ? bObj.name : bossId;
 
     const newState = await rotateBossTurn(
       bossId,
