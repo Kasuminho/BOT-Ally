@@ -1,4 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
+import { getRandomJoke } from './jokes.js';
+import { getBossRotationState } from './rotation.js';
 
 /**
  * Cria o Embed "enfeitado" para o aviso diário fixo das 23:00 (TA 2 / TA 3 / TA 4)
@@ -6,6 +8,7 @@ import { EmbedBuilder } from 'discord.js';
  */
 export function createDailyFixedEmbed(noticeType) {
   const embed = new EmbedBuilder().setTimestamp();
+  const state = getBossRotationState('fixed_23h');
 
   if (noticeType === 'REMINDER_20M') {
     embed
@@ -18,9 +21,10 @@ export function createDailyFixedEmbed(noticeType) {
       .addFields(
         { name: '🏰 TA 2', value: '👑 **Ducas**', inline: true },
         { name: '🏰 TA 3', value: '👑 **Dergio**', inline: true },
-        { name: '🏰 TA 4', value: '👑 **Turga / Gillaot / Frezam**', inline: true }
+        { name: '🏰 TA 4', value: '👑 **Turga / Gillaot / Frezam**', inline: true },
+        { name: '🎯 Vez do Drop (União)', value: `**\`${state.nextTag}\`** *(Última: ${state.lastTag})*`, inline: false }
       )
-      .setFooter({ text: 'BOT Ally • Lembrete 20m (22:40)' });
+      .setFooter({ text: `${getRandomJoke()}` });
   } else if (noticeType === 'REMINDER_5M') {
     embed
       .setTitle('🔥 ⚔️ [ALERTA 5 MINUTOS] BOSSES FIXOS NASCENDO EM BREVE! ⚔️ 🔥')
@@ -32,9 +36,10 @@ export function createDailyFixedEmbed(noticeType) {
       .addFields(
         { name: '🏰 TA 2', value: '🔥 **Ducas**', inline: true },
         { name: '🏰 TA 3', value: '🔥 **Dergio**', inline: true },
-        { name: '🏰 TA 4', value: '🔥 **Turga / Gillaot / Frezam**', inline: true }
+        { name: '🏰 TA 4', value: '🔥 **Turga / Gillaot / Frezam**', inline: true },
+        { name: '🎯 Vez do Drop (União)', value: `**\`${state.nextTag}\`** *(Última: ${state.lastTag})*`, inline: false }
       )
-      .setFooter({ text: 'BOT Ally • Lembrete 5m (22:55)' });
+      .setFooter({ text: `${getRandomJoke()}` });
   } else {
     embed
       .setTitle('⚔️ 🔥 [BOSSES NASCERAM] TA 2 / TA 3 / TA 4 NASCERAM! 🔥 ⚔️')
@@ -46,9 +51,10 @@ export function createDailyFixedEmbed(noticeType) {
       .addFields(
         { name: '🏰 TA 2', value: '💥 **Ducas**', inline: true },
         { name: '🏰 TA 3', value: '💥 **Dergio**', inline: true },
-        { name: '🏰 TA 4', value: '💥 **Turga / Gillaot / Frezam**', inline: true }
+        { name: '🏰 TA 4', value: '💥 **Turga / Gillaot / Frezam**', inline: true },
+        { name: '🎯 Vez do Drop (União)', value: `**\`${state.nextTag}\`**`, inline: false }
       )
-      .setFooter({ text: 'BOT Ally • Spawn Diário (23:00)' });
+      .setFooter({ text: `${getRandomJoke()}` });
   }
 
   return embed;
@@ -62,6 +68,8 @@ export function createDailyFixedEmbed(noticeType) {
 export function createCustomBossEmbed(boss, noticeType) {
   const embed = new EmbedBuilder().setTimestamp();
   const unixSec = Math.floor(boss.spawnTimestamp / 1000);
+  const isInterserver = boss.category === 'interserver';
+  const state = isInterserver ? getBossRotationState(boss.bossId || boss.id) : null;
 
   if (noticeType === 'REGISTERED') {
     embed
@@ -71,10 +79,17 @@ export function createCustomBossEmbed(boss, noticeType) {
       .addFields(
         { name: '👾 Boss', value: `**${boss.name}**`, inline: true },
         { name: '📍 Local', value: `**${boss.location}**`, inline: true },
-        { name: '⏰ Horário Previsto', value: `<t:${unixSec}:F> (<t:${unixSec}:R>)`, inline: false },
-        { name: '👤 Agendado por', value: `${boss.createdBy}`, inline: true }
-      )
-      .setFooter({ text: 'BOT Ally • Rastreamento de Bosses' });
+        { name: '⏰ Horário Previsto', value: `<t:${unixSec}:F> (<t:${unixSec}:R>)`, inline: false }
+      );
+
+    if (isInterserver && state) {
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `**\`${state.nextTag}\`** *(Última: ${state.lastTag})*`, inline: true });
+    }
+
+    embed
+      .addFields({ name: '👤 Agendado por', value: `${boss.createdBy}`, inline: true })
+      .setFooter({ text: `${getRandomJoke()}` });
+
   } else if (noticeType === 'REMINDER_20M') {
     embed
       .setTitle(`🚨 ⚔️ [ALERTA 20 MINUTOS] BOSS CHEGANDO!`)
@@ -84,8 +99,14 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '👾 Boss', value: `**${boss.name}**`, inline: true },
         { name: '📍 Local', value: `**${boss.location}**`, inline: true },
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
-      )
-      .setFooter({ text: 'BOT Ally • Lembrete 20m' });
+      );
+
+    if (isInterserver && state) {
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `**\`${state.nextTag}\`**`, inline: true });
+    }
+
+    embed.setFooter({ text: `${getRandomJoke()}` });
+
   } else if (noticeType === 'REMINDER_5M') {
     embed
       .setTitle(`🔥 ⚔️ [ALERTA 5 MINUTOS] ${boss.name.toUpperCase()} NASCENDO EM BREVE! ⚔️ 🔥`)
@@ -95,8 +116,14 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '👾 Boss', value: `**${boss.name}**`, inline: true },
         { name: '📍 Local', value: `**${boss.location}**`, inline: true },
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
-      )
-      .setFooter({ text: 'BOT Ally • Lembrete 5m' });
+      );
+
+    if (isInterserver && state) {
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `**\`${state.nextTag}\`**`, inline: true });
+    }
+
+    embed.setFooter({ text: `${getRandomJoke()}` });
+
   } else if (noticeType === 'SPAWN') {
     embed
       .setTitle(`💥 ⚔️ [BOSS NASCEU] ${boss.name.toUpperCase()} NASCEU AGORA! ⚔️ 💥`)
@@ -105,8 +132,13 @@ export function createCustomBossEmbed(boss, noticeType) {
       .addFields(
         { name: '👾 Boss', value: `**${boss.name}**`, inline: true },
         { name: '📍 Local', value: `**${boss.location}**`, inline: true }
-      )
-      .setFooter({ text: 'BOT Ally • Alerta de Spawn' });
+      );
+
+    if (isInterserver && state) {
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `**\`${state.nextTag}\`**`, inline: true });
+    }
+
+    embed.setFooter({ text: `${getRandomJoke()}` });
   }
 
   return embed;
@@ -121,7 +153,7 @@ export function createBossListEmbed(bosses) {
     .setTitle('📜 ⚔️ LISTA DE BOSSES AGENDADOS - ALLY ⚔️ 📜')
     .setColor('#3399FF')
     .setTimestamp()
-    .setFooter({ text: 'BOT Ally • Rastreamento Ativo' });
+    .setFooter({ text: `${getRandomJoke()}` });
 
   if (!bosses || bosses.length === 0) {
     embed.setDescription('ℹ️ Nenhum boss agendado no momento.\nUse `/boss` para agendar um novo boss!');
@@ -136,6 +168,12 @@ export function createBossListEmbed(bosses) {
     desc += `**${idx + 1}. ${b.name}** (ID: \`${b.id}\`)\n`;
     desc += `📍 **Local:** ${b.location}\n`;
     desc += `⏰ **Nascimento:** <t:${unixSec}:T> (<t:${unixSec}:R>)\n`;
+
+    if (b.category === 'interserver') {
+      const state = getBossRotationState(b.bossId || b.id);
+      desc += `🎯 **TAG da Vez:** \`${state.nextTag}\`\n`;
+    }
+
     desc += `👤 **Por:** ${b.createdBy}\n`;
     desc += `───────────────\n`;
   });

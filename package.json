@@ -1,7 +1,7 @@
 {
   "name": "bot-ally",
-  "version": "1.5.0",
-  "description": "Bot do Discord para Rastreamento e Alerta de Bosses - Ally",
+  "version": "2.0.0",
+  "description": "Bot do Discord para Rastreamento de Bosses, Rotação de Drops e Auditoria - Ally",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
@@ -14,7 +14,8 @@
     "bot",
     "boss",
     "ally",
-    "timer"
+    "timer",
+    "rotation"
   ],
   "author": "",
   "license": "ISC",

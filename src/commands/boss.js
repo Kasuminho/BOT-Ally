@@ -10,6 +10,8 @@ import { BOSS_LIST } from '../utils/bossList.js';
 import { db } from '../database/db.js';
 import { createCustomBossEmbed } from '../utils/embeds.js';
 import { config } from '../config.js';
+import { rotateBossTurn, getBossRotationState } from '../utils/rotation.js';
+import { addAuditEntry } from '../utils/audit.js';
 import { DateTime } from 'luxon';
 
 export const data = new SlashCommandBuilder()
@@ -87,6 +89,12 @@ export async function handleSelectMenu(interaction) {
     });
   }
 
+  let labelText = `Tempo restante até nascer (HH:MM):`;
+  if (bossObj.category === 'interserver') {
+    const rotState = getBossRotationState(bossObj.id);
+    labelText = `[TAG ${rotState.nextTag}] Tempo até nascer (HH:MM):`;
+  }
+
   // Cria o Modal para solicitar o tempo restante em HH:MM
   const modal = new ModalBuilder()
     .setCustomId(`modal_timer_${bossObj.id}`)
@@ -94,7 +102,7 @@ export async function handleSelectMenu(interaction) {
 
   const timerInput = new TextInputBuilder()
     .setCustomId('input_timer')
-    .setLabel(`Tempo restante até nascer (HH:MM):`)
+    .setLabel(labelText)
     .setStyle(TextInputStyle.Short)
     .setPlaceholder('Exemplo: 02:30 (2h e 30m) ou 00:45 (45 min)')
     .setMinLength(4)
@@ -165,6 +173,19 @@ export async function handleModalSubmit(interaction) {
     });
   }
 
+  // Se for boss de TA ou Grotesca, executa a rotação de união automaticamente
+  let rotText = '';
+  if (bossObj.category === 'interserver') {
+    const newState = await rotateBossTurn(
+      bossObj.id,
+      bossObj.name,
+      null,
+      { authorTag: interaction.user.tag, authorId: interaction.user.id },
+      interaction.client
+    );
+    rotText = `\n🔄 **Rodada da União:** O turno deste boss foi confirmado para \`${newState.lastTag}\` e avançou para a próxima TAG \`${newState.nextTag}\` (Painel fixo atualizado).`;
+  }
+
   const spawnDateTime = now.plus({ minutes: totalMinutes });
   const spawnTimestamp = spawnDateTime.toMillis();
 
@@ -180,18 +201,25 @@ export async function handleModalSubmit(interaction) {
     spawnTimestamp,
     createdBy: interaction.user.tag,
     channelId: targetChannelId,
-    notified20m: totalMinutes <= 20, // marca notificado se tempo for menor que 20m
-    notified5m: totalMinutes <= 5,   // marca notificado se tempo for menor que 5m
+    notified20m: totalMinutes <= 20,
+    notified5m: totalMinutes <= 5,
     notifiedSpawn: false
   };
 
   db.addBoss(bossData);
 
+  // Registro na Auditoria
+  addAuditEntry(
+    interaction.user.tag,
+    interaction.user.id,
+    `Agendou o Boss ${bossObj.name} (${bossObj.location}) para ${totalMinutes}m a partir de agora`
+  );
+
   const embed = createCustomBossEmbed(bossData, 'REGISTERED');
 
-  // Resposta EFÊMERA (apenas para quem usou o comando)
+  // Resposta EFÊMERA
   await interaction.reply({
-    content: `📢 **[BOSS RASTREADO]** Timer ativado para **${bossObj.name}** (${bossObj.categoryLabel})!\nOs avisos serão enviados no canal de avisos <#${targetChannelId}>.`,
+    content: `📢 **[BOSS RASTREADO]** Timer ativado para **${bossObj.name}** (${bossObj.categoryLabel})!${rotText}\nOs avisos serão enviados no canal <#${targetChannelId}>.`,
     embeds: [embed],
     ephemeral: true
   });

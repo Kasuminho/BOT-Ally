@@ -8,6 +8,9 @@ import * as bossCmd from './commands/boss.js';
 import * as listarCmd from './commands/listarBosses.js';
 import * as cancelarCmd from './commands/cancelarBoss.js';
 import * as testarCmd from './commands/testar.js';
+import * as cargostaffCmd from './commands/cargostaff.js';
+import * as auditoriaCmd from './commands/auditoria.js';
+import * as rotacaoCmd from './commands/rotacao.js';
 
 validateConfig();
 
@@ -22,7 +25,7 @@ const client = new Client({
 
 // Registra os comandos na coleção
 client.commands = new Collection();
-const commandsList = [bossCmd, listarCmd, cancelarCmd, testarCmd];
+const commandsList = [bossCmd, listarCmd, cancelarCmd, testarCmd, cargostaffCmd, auditoriaCmd, rotacaoCmd];
 
 for (const cmd of commandsList) {
   client.commands.set(cmd.data.name, cmd);
@@ -31,7 +34,7 @@ for (const cmd of commandsList) {
 // Evento quando o bot está pronto
 client.once('ready', async () => {
   console.log(`==========================================`);
-  console.log(`🤖 BOT Ally conectado como: ${client.user.tag}`);
+  console.log(`🤖 BOT Ally v2.0 conectado como: ${client.user.tag}`);
   console.log(`📢 Canal de Avisos: ${config.announcementChannelId || 'Não configurado'}`);
   console.log(`==========================================`);
 
@@ -40,7 +43,7 @@ client.once('ready', async () => {
 
   // Presença do bot
   client.user.setPresence({
-    activities: [{ name: 'Gerenciando Bosses Ally ⚔️', type: ActivityType.Custom }],
+    activities: [{ name: 'Gerenciando Bosses & Rotações Ally ⚔️', type: ActivityType.Custom }],
     status: 'online'
   });
 
@@ -51,10 +54,10 @@ client.once('ready', async () => {
 // Manipulação centralizada de interações no Discord
 client.on('interactionCreate', async interaction => {
   try {
-    // Verificação de Autorização (ID do Usuário 273600843251712020 ou Staff/Admin)
+    // Verificação de Autorização (SuperAdmins, Staff ou Cargos Autorizados)
     if (!isAuthorized(interaction)) {
       const unauthorizedMessage = {
-        content: '❌ **Acesso negado!** Apenas membros da **Staff** ou administradores podem utilizar os comandos do BOT Ally.',
+        content: '❌ **Acesso negado!** Apenas membros da **Staff** ou cargos autorizados podem utilizar os comandos do BOT Ally.',
         ephemeral: true
       };
       if (interaction.replied || interaction.deferred) {
@@ -70,7 +73,13 @@ client.on('interactionCreate', async interaction => {
       if (!command) return;
       await command.execute(interaction);
     }
-    // 2. Select Menus (Dropdown)
+    // 2. Botões Interativos (Navegação de Paginação)
+    else if (interaction.isButton()) {
+      if (interaction.customId.startsWith('audit_page_')) {
+        await auditoriaCmd.handleAuditPagination(interaction);
+      }
+    }
+    // 3. Select Menus (Dropdown)
     else if (interaction.isStringSelectMenu()) {
       if (interaction.customId === 'select_boss') {
         await bossCmd.handleSelectMenu(interaction);
@@ -78,7 +87,7 @@ client.on('interactionCreate', async interaction => {
         await cancelarCmd.handleCancelSelect(interaction);
       }
     }
-    // 3. Modals Submit
+    // 4. Modals Submit
     else if (interaction.isModalSubmit()) {
       if (interaction.customId.startsWith('modal_timer_')) {
         await bossCmd.handleModalSubmit(interaction);
