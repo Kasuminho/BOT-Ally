@@ -70,6 +70,10 @@ export function createCustomBossEmbed(boss, noticeType) {
   const isInterserver = boss.category === 'interserver';
   const state = isInterserver ? getBossRotationState(boss.bossId || boss.id) : null;
 
+  // TAG da vez para este spawn e próxima TAG da fila
+  const currentTag = boss.targetTag || state?.lastTag || state?.nextTag;
+  const upcomingTag = boss.nextTag || state?.nextTag;
+
   if (noticeType === 'REGISTERED') {
     embed
       .setTitle(`✅ 🎯 BOSS RASTREADO COM SUCESSO!`)
@@ -81,8 +85,9 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:F> (<t:${unixSec}:R>)`, inline: false }
       );
 
-    if (isInterserver && state) {
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `👑 **\`${state.nextTag}\`** *(Última: ${state.lastTag})*`, inline: true });
+    if (isInterserver && currentTag) {
+      const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: tagInfo, inline: true });
     } else {
       embed.addFields({ name: '🛡️ Tipo', value: `**Servidor (Gelo)**`, inline: true });
     }
@@ -102,8 +107,9 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
       );
 
-    if (isInterserver && state) {
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `👑 **\`${state.nextTag}\`**`, inline: true });
+    if (isInterserver && currentTag) {
+      const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: tagInfo, inline: true });
     }
 
     embed.setFooter({ text: `${getRandomJoke()}` });
@@ -119,8 +125,9 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
       );
 
-    if (isInterserver && state) {
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: `👑 **\`${state.nextTag}\`**`, inline: true });
+    if (isInterserver && currentTag) {
+      const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
+      embed.addFields({ name: '🎯 Vez da TAG (União)', value: tagInfo, inline: true });
     }
 
     embed.setFooter({ text: `${getRandomJoke()}` });
@@ -135,8 +142,9 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '📍 Local', value: `**${boss.location}**`, inline: true }
       );
 
-    if (isInterserver && state) {
-      embed.addFields({ name: '🎯 TAG Atual do Drop (União)', value: `👑 **\`${state.lastTag}\`** *(Próxima: ${state.nextTag})*`, inline: false });
+    if (isInterserver && currentTag) {
+      const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
+      embed.addFields({ name: '🎯 TAG Atual do Drop (União)', value: tagInfo, inline: false });
     }
 
     embed.setFooter({ text: `${getRandomJoke()}` });
@@ -172,7 +180,8 @@ export function createBossListEmbed(bosses) {
 
     if (b.category === 'interserver') {
       const state = getBossRotationState(b.bossId || b.id);
-      desc += `🎯 **TAG da Vez:** \`${state.nextTag}\`\n`;
+      const tagVez = b.targetTag || state?.lastTag || state?.nextTag;
+      desc += `🎯 **TAG da Vez:** \`${tagVez}\`\n`;
     }
 
     desc += `👤 **Por:** ${b.createdBy}\n`;

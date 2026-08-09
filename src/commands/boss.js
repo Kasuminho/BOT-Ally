@@ -176,6 +176,9 @@ export async function handleModalSubmit(interaction) {
 
   // Se for boss de TA ou Grotesca, executa a rotação de união automaticamente
   let rotText = '';
+  let targetTag = null;
+  let nextTag = null;
+
   if (bossObj.category === 'interserver') {
     const newState = await rotateBossTurn(
       bossObj.id,
@@ -184,6 +187,8 @@ export async function handleModalSubmit(interaction) {
       { authorTag: interaction.user.tag, authorId: interaction.user.id },
       interaction.client
     );
+    targetTag = newState.lastTag;
+    nextTag = newState.nextTag;
     rotText = `\n🔄 **Rodada da União:** O turno deste boss foi confirmado para \`${newState.lastTag}\` e avançou para a próxima TAG \`${newState.nextTag}\` (Painel fixo atualizado).`;
   }
 
@@ -200,6 +205,8 @@ export async function handleModalSubmit(interaction) {
     location: bossObj.location,
     category: bossObj.category,
     categoryLabel: bossObj.categoryLabel,
+    targetTag,
+    nextTag,
     spawnTimestamp,
     createdBy: interaction.user.tag,
     channelId: targetChannelId,
