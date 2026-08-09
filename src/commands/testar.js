@@ -1,10 +1,11 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { config } from '../config.js';
 import { createDailyFixedEmbed, createCustomBossEmbed } from '../utils/embeds.js';
+import { getChannelForBoss } from '../services/scheduler.js';
 
 export const data = new SlashCommandBuilder()
   .setName('testar')
-  .setDescription('Envia um aviso de teste no canal de avisos (SEM marcar @everyone ou cargos).');
+  .setDescription('Envia um aviso de teste dos Embeds no canal de avisos (SEM marcar @everyone ou cargos).');
 
 export async function execute(interaction) {
   const channelId = config.announcementChannelId;
@@ -26,25 +27,29 @@ export async function execute(interaction) {
       });
     }
 
-    // Embeds no formato idêntico ao oficial, sem qualquer marcação/ping de cargo
-    const testFixedEmbed = createDailyFixedEmbed('REMINDER_20M');
-
-    const sampleBoss = {
-      name: 'Dardaloca',
-      location: 'Caverna de Gelo 3 Sudoeste',
-      spawnTimestamp: Date.now() + 20 * 60 * 1000,
-      createdBy: interaction.user.tag,
-      categoryLabel: '❄️ Servidor (Gelo)'
+    // Embed de Teste 1: Boss de Rotação de União (Grotesca)
+    const sampleRotationBoss = {
+      id: 'panderre_test',
+      bossId: 'panderre',
+      name: 'Panderre',
+      location: 'Caverna Grotesca 3º Andar',
+      category: 'interserver',
+      categoryLabel: '🗿 Interserver (Grotesca)',
+      spawnTimestamp: Date.now(),
+      createdBy: interaction.user.tag
     };
-    const testCustomEmbed = createCustomBossEmbed(sampleBoss, 'REMINDER_20M');
+    const testRotationEmbed = createCustomBossEmbed(sampleRotationBoss, 'SPAWN');
+
+    // Embed de Teste 2: Bosses Fixos das 23h
+    const testFixedEmbed = createDailyFixedEmbed('SPAWN');
 
     await channel.send({
-      content: '🧪 **[TESTE DE LAYOUT E PERMISSÕES]** *(Nenhum cargo ou @everyone foi marcado neste teste)*',
-      embeds: [testFixedEmbed, testCustomEmbed]
+      content: '🧪 **[TESTE DE EMBEDS E PERMISSÕES]** *(Verificando exibição dos cartões Embed)*',
+      embeds: [testRotationEmbed, testFixedEmbed]
     });
 
     await interaction.reply({
-      content: `✅ **Aviso de teste enviado com sucesso no canal <#${channelId}>!**\nVerifique se o bot conseguiu postar os Embeds corretamente.`,
+      content: `✅ **Aviso de teste enviado no canal <#${channelId}>!**\n\n📌 **Atenção:** Se apenas o texto apareceu e o cartão do Embed **não apareceu**, ative a permissão **"Inserir Links" (Embed Links)** para o bot no cargo ou no canal de avisos!`,
       ephemeral: true
     });
   } catch (error) {
