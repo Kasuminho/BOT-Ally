@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
 import { db } from '../database/db.js';
 import { DateTime } from 'luxon';
+import { revertBossTurn } from '../utils/rotation.js';
 
 export const data = new SlashCommandBuilder()
   .setName('cancelarboss')
@@ -53,8 +54,21 @@ export async function handleCancelSelect(interaction) {
   const removed = db.removeBoss(bossId);
 
   if (removed) {
+    let revertText = '';
+    if (targetBoss && targetBoss.category === 'interserver' && targetBoss.previousLastTag && targetBoss.previousNextTag) {
+      await revertBossTurn(
+        targetBoss.bossId,
+        targetBoss.name,
+        targetBoss.previousLastTag,
+        targetBoss.previousNextTag,
+        { authorTag: interaction.user.tag, authorId: interaction.user.id },
+        interaction.client
+      );
+      revertText = `\n🔄 **Rotação Revertida:** O turno do boss voltou para a TAG \`${targetBoss.previousNextTag}\` (Última: \`${targetBoss.previousLastTag}\`). Painel fixo atualizado.`;
+    }
+
     await interaction.update({
-      content: `✅ **Timer do Boss ${targetBoss ? targetBoss.name : ''} cancelado com sucesso!**`,
+      content: `✅ **Timer do Boss ${targetBoss ? targetBoss.name : ''} cancelado com sucesso!**${revertText}`,
       components: []
     });
   } else {

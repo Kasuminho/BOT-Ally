@@ -137,6 +137,44 @@ export async function rotateBossTurn(bossId, bossName, tagConfirmada = null, aut
 }
 
 /**
+ * Reverte o turno de um boss para o estado anterior (usado ao cancelar agendamento)
+ * @param {string} bossId - ID do boss
+ * @param {string} bossName - Nome amigável do boss
+ * @param {string} previousLastTag - Tag anterior (lastTag)
+ * @param {string} previousNextTag - Próxima tag anterior (nextTag)
+ * @param {Object} authorInfo - { authorTag, authorId }
+ * @param {import('discord.js').Client} client 
+ */
+export async function revertBossTurn(bossId, bossName, previousLastTag, previousNextTag, authorInfo = null, client = null) {
+  if (!previousLastTag || !previousNextTag) return null;
+
+  const rot = rotationDb.get();
+  const nowStr = DateTime.now().setZone('America/Sao_Paulo').toFormat('dd/MM HH:mm');
+
+  rot.bosses[bossId] = {
+    lastTag: previousLastTag,
+    nextTag: previousNextTag,
+    updatedAt: nowStr
+  };
+
+  rotationDb.save(rot);
+
+  // Registro na auditoria
+  const actionText = `Reverteu Rotação do Boss ${bossName} (Restaurado: Última ${previousLastTag} ➡️ Próxima ${previousNextTag})`;
+  const authorTag = authorInfo?.authorTag || 'BOT Ally (Automático)';
+  const authorId = authorInfo?.authorId || 'SYSTEM';
+
+  addAuditEntry(authorTag, authorId, actionText);
+
+  // Atualiza a mensagem fixa do painel no Discord
+  if (client) {
+    await updateRotationPanel(client);
+  }
+
+  return rot.bosses[bossId];
+}
+
+/**
  * Cria ou edita a mensagem única do Painel de Rotação de Drops no Discord
  * @param {import('discord.js').Client} client 
  */

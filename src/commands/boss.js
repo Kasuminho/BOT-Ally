@@ -178,8 +178,14 @@ export async function handleModalSubmit(interaction) {
   let rotText = '';
   let targetTag = null;
   let nextTag = null;
+  let previousLastTag = null;
+  let previousNextTag = null;
 
   if (bossObj.category === 'interserver') {
+    const prevState = getBossRotationState(bossObj.id);
+    previousLastTag = prevState.lastTag;
+    previousNextTag = prevState.nextTag;
+
     const newState = await rotateBossTurn(
       bossObj.id,
       bossObj.name,
@@ -207,6 +213,8 @@ export async function handleModalSubmit(interaction) {
     categoryLabel: bossObj.categoryLabel,
     targetTag,
     nextTag,
+    previousLastTag,
+    previousNextTag,
     spawnTimestamp,
     createdBy: interaction.user.tag,
     channelId: targetChannelId,
