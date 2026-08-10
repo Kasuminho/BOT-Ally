@@ -91,7 +91,7 @@ export async function handleSelectMenu(interaction) {
   }
 
   let labelText = `Tempo restante até nascer (HH:MM):`;
-  if (bossObj.category === 'interserver') {
+  if (bossObj.category === 'interserver' || bossObj.category === 'gelo') {
     const rotState = getBossRotationState(bossObj.id);
     labelText = `[TAG ${rotState.nextTag}] Tempo até nascer (HH:MM):`;
   }
@@ -174,14 +174,14 @@ export async function handleModalSubmit(interaction) {
     });
   }
 
-  // Se for boss de TA ou Grotesca, executa a rotação de união automaticamente
+  // Se for boss de TA, Grotesca ou Gelo, executa a rotação automaticamente
   let rotText = '';
   let targetTag = null;
   let nextTag = null;
   let previousLastTag = null;
   let previousNextTag = null;
 
-  if (bossObj.category === 'interserver') {
+  if (bossObj.category === 'interserver' || bossObj.category === 'gelo') {
     const prevState = getBossRotationState(bossObj.id);
     previousLastTag = prevState.lastTag;
     previousNextTag = prevState.nextTag;
@@ -195,7 +195,8 @@ export async function handleModalSubmit(interaction) {
     );
     targetTag = newState.lastTag;
     nextTag = newState.nextTag;
-    rotText = `\n🔄 **Rodada da União:** O turno deste boss foi confirmado para \`${newState.lastTag}\` e avançou para a próxima TAG \`${newState.nextTag}\` (Painel fixo atualizado).`;
+    const catLabel = bossObj.category === 'gelo' ? 'Gelo MF' : 'União';
+    rotText = `\n🔄 **Rodada (${catLabel}):** O turno deste boss foi confirmado para \`${newState.lastTag}\` e avançou para a próxima TAG \`${newState.nextTag}\` (Painel fixo atualizado).`;
   }
 
   const spawnDateTime = now.plus({ minutes: totalMinutes });

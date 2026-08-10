@@ -23,8 +23,11 @@ function readRotation() {
   if (!fs.existsSync(ROTATION_FILE)) {
     return {
       tags: DEFAULT_TAGS,
+      geloTags: DEFAULT_TAGS,
       panelChannelId: null,
       panelMessageId: null,
+      geloPanelChannelId: null,
+      geloPanelMessageId: null,
       bosses: {}
     };
   }
@@ -32,14 +35,18 @@ function readRotation() {
     const raw = fs.readFileSync(ROTATION_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
     if (!parsed.tags || parsed.tags.length === 0) parsed.tags = DEFAULT_TAGS;
+    if (!parsed.geloTags || parsed.geloTags.length === 0) parsed.geloTags = [...parsed.tags];
     if (!parsed.bosses) parsed.bosses = {};
     return parsed;
   } catch (err) {
     console.error('Erro ao ler rotation.json:', err);
     return {
       tags: DEFAULT_TAGS,
+      geloTags: DEFAULT_TAGS,
       panelChannelId: null,
       panelMessageId: null,
+      geloPanelChannelId: null,
+      geloPanelMessageId: null,
       bosses: {}
     };
   }
@@ -65,11 +72,22 @@ export const rotationDb = {
 };
 
 /**
- * Retorna a próxima tag da sequência em rodízio
+ * Retorna se o boss pertence à Masmorra de Gelo
  */
-export function getNextTagInSequence(currentTag) {
+function isGeloCategory(bossId) {
+  const b = BOSS_LIST.find(item => item.id === bossId);
+  return b?.category === 'gelo';
+}
+
+/**
+ * Retorna a próxima tag da sequência em rodízio (geral ou Gelo)
+ */
+export function getNextTagInSequence(currentTag, isGelo = false) {
   const rot = rotationDb.get();
-  const tags = rot.tags || DEFAULT_TAGS;
+  const tags = isGelo 
+    ? (rot.geloTags && rot.geloTags.length > 0 ? rot.geloTags : rot.tags || DEFAULT_TAGS)
+    : (rot.tags || DEFAULT_TAGS);
+
   const index = tags.indexOf(currentTag);
   if (index === -1 || index === tags.length - 1) {
     return tags[0];
@@ -82,7 +100,10 @@ export function getNextTagInSequence(currentTag) {
  */
 export function getBossRotationState(bossId) {
   const rot = rotationDb.get();
-  const tags = rot.tags || DEFAULT_TAGS;
+  const isGelo = isGeloCategory(bossId);
+  const tags = isGelo
+    ? (rot.geloTags && rot.geloTags.length > 0 ? rot.geloTags : rot.tags || DEFAULT_TAGS)
+    : (rot.tags || DEFAULT_TAGS);
 
   if (rot.bosses && rot.bosses[bossId]) {
     return rot.bosses[bossId];
@@ -97,7 +118,7 @@ export function getBossRotationState(bossId) {
 }
 
 /**
- * Executa a rotação do turno de um boss
+ * Executa a rotação do turno de um boss (Interserver ou Gelo)
  * @param {string} bossId - ID do boss
  * @param {string} bossName - Nome amigável do boss
  * @param {string|null} tagConfirmada - Tag que atuou (opcional)
@@ -106,11 +127,12 @@ export function getBossRotationState(bossId) {
  */
 export async function rotateBossTurn(bossId, bossName, tagConfirmada = null, authorInfo = null, client = null) {
   const rot = rotationDb.get();
+  const isGelo = isGeloCategory(bossId);
   const currentState = getBossRotationState(bossId);
   const currentNext = currentState.nextTag;
 
   const actualLast = tagConfirmada || currentNext;
-  const newNext = getNextTagInSequence(actualLast);
+  const newNext = getNextTagInSequence(actualLast, isGelo);
   const nowStr = DateTime.now().setZone('America/Sao_Paulo').toFormat('dd/MM HH:mm');
 
   rot.bosses[bossId] = {
@@ -122,7 +144,8 @@ export async function rotateBossTurn(bossId, bossName, tagConfirmada = null, aut
   rotationDb.save(rot);
 
   // Registro na auditoria
-  const actionText = `Rotacionou Boss ${bossName} (Última: ${actualLast} ➡️ Próxima: ${newNext})`;
+  const categoryStr = isGelo ? '(Gelo)' : '(União)';
+  const actionText = `Rotacionou Boss ${bossName} ${categoryStr} (Última: ${actualLast} ➡️ Próxima: ${newNext})`;
   const authorTag = authorInfo?.authorTag || 'BOT Ally (Automático)';
   const authorId = authorInfo?.authorId || 'SYSTEM';
 
@@ -130,7 +153,11 @@ export async function rotateBossTurn(bossId, bossName, tagConfirmada = null, aut
 
   // Atualiza a mensagem fixa do painel no Discord
   if (client) {
-    await updateRotationPanel(client);
+    if (isGelo) {
+      await updateGeloRotationPanel(client);
+    } else {
+      await updateRotationPanel(client);
+    }
   }
 
   return rot.bosses[bossId];
@@ -149,6 +176,7 @@ export async function revertBossTurn(bossId, bossName, previousLastTag, previous
   if (!previousLastTag || !previousNextTag) return null;
 
   const rot = rotationDb.get();
+  const isGelo = isGeloCategory(bossId);
   const nowStr = DateTime.now().setZone('America/Sao_Paulo').toFormat('dd/MM HH:mm');
 
   rot.bosses[bossId] = {
@@ -168,14 +196,18 @@ export async function revertBossTurn(bossId, bossName, previousLastTag, previous
 
   // Atualiza a mensagem fixa do painel no Discord
   if (client) {
-    await updateRotationPanel(client);
+    if (isGelo) {
+      await updateGeloRotationPanel(client);
+    } else {
+      await updateRotationPanel(client);
+    }
   }
 
   return rot.bosses[bossId];
 }
 
 /**
- * Cria ou edita a mensagem única do Painel de Rotação de Drops no Discord
+ * Cria ou edita a mensagem única do Painel de Rotação Principal (TA / Grotesca)
  * @param {import('discord.js').Client} client 
  */
 export async function updateRotationPanel(client) {
@@ -193,7 +225,7 @@ export async function updateRotationPanel(client) {
         const msg = await channel.messages.fetch(rot.panelMessageId);
         if (msg) {
           await msg.edit({ embeds: [embed] });
-          console.log(`✅ [ROTAÇÃO] Painel único de rotação atualizado na mensagem ${rot.panelMessageId}`);
+          console.log(`✅ [ROTAÇÃO] Painel principal de rotação atualizado na mensagem ${rot.panelMessageId}`);
           return;
         }
       } catch (e) {
@@ -201,26 +233,61 @@ export async function updateRotationPanel(client) {
       }
     }
 
-    // Se não encontrou ou não existia, envia nova e salva ID
     const newMsg = await channel.send({ embeds: [embed] });
     rot.panelMessageId = newMsg.id;
     rotationDb.save(rot);
-    console.log(`✅ [ROTAÇÃO] Novo painel único criado com mensagem ID ${newMsg.id}`);
+    console.log(`✅ [ROTAÇÃO] Novo painel principal criado com mensagem ID ${newMsg.id}`);
 
   } catch (err) {
-    console.error('❌ Erro ao atualizar o painel de rotação:', err);
+    console.error('❌ Erro ao atualizar o painel de rotação principal:', err);
   }
 }
 
 /**
- * Gera o Embed do Painel Fixo de Rotação de Drops (Exclui bosses fixos que são FFA)
+ * Cria ou edita a mensagem única do Painel de Rotação da Masmorra de Gelo
+ * @param {import('discord.js').Client} client 
+ */
+export async function updateGeloRotationPanel(client) {
+  const rot = rotationDb.get();
+  if (!rot.geloPanelChannelId) return;
+
+  try {
+    const channel = await client.channels.fetch(rot.geloPanelChannelId);
+    if (!channel || !channel.isTextBased()) return;
+
+    const embed = createGeloPanelEmbed();
+
+    if (rot.geloPanelMessageId) {
+      try {
+        const msg = await channel.messages.fetch(rot.geloPanelMessageId);
+        if (msg) {
+          await msg.edit({ embeds: [embed] });
+          console.log(`✅ [ROTAÇÃO GELO] Painel de Gelo atualizado na mensagem ${rot.geloPanelMessageId}`);
+          return;
+        }
+      } catch (e) {
+        console.warn('⚠️ Mensagem de painel de Gelo existente não encontrada. Criando uma nova...');
+      }
+    }
+
+    const newMsg = await channel.send({ embeds: [embed] });
+    rot.geloPanelMessageId = newMsg.id;
+    rotationDb.save(rot);
+    console.log(`✅ [ROTAÇÃO GELO] Novo painel de Gelo criado com mensagem ID ${newMsg.id}`);
+
+  } catch (err) {
+    console.error('❌ Erro ao atualizar o painel de rotação de Gelo:', err);
+  }
+}
+
+/**
+ * Gera o Embed do Painel Fixo de Rotação Principal (Interserver - TA / Grotesca)
  */
 export function createPanelEmbed() {
   const rot = rotationDb.get();
   const tags = rot.tags || DEFAULT_TAGS;
   const now = DateTime.now().setZone('America/Sao_Paulo').toFormat('dd/MM/yyyy HH:mm');
 
-  // Filtra bosses de TA e Grotesca (excluindo os fixos das 23h que são FFA)
   const taGrotescaBosses = BOSS_LIST.filter(b => b.category === 'interserver');
 
   let taText = '';
@@ -248,6 +315,39 @@ export function createPanelEmbed() {
     .addFields(
       { name: '🏰 BOSSES DE TA (Torre da Arrogância)', value: taText || 'Nenhum', inline: false },
       { name: '🗿 BOSSES DE GROTESCA', value: grotescaText || 'Nenhum', inline: false }
+    )
+    .setTimestamp()
+    .setFooter({ text: `${getRandomJoke()}` });
+
+  return embed;
+}
+
+/**
+ * Gera o Embed do Painel Fixo de Rotação da Masmorra de Gelo (MF)
+ */
+export function createGeloPanelEmbed() {
+  const rot = rotationDb.get();
+  const geloTags = (rot.geloTags && rot.geloTags.length > 0) ? rot.geloTags : (rot.tags || DEFAULT_TAGS);
+  const now = DateTime.now().setZone('America/Sao_Paulo').toFormat('dd/MM/yyyy HH:mm');
+
+  const geloBosses = BOSS_LIST.filter(b => b.category === 'gelo');
+
+  let geloText = '';
+  geloBosses.forEach(b => {
+    const state = getBossRotationState(b.id);
+    geloText += `• **${b.name}** (${b.location})\n  └ 🎯 **Próxima:** \`${state.nextTag}\` | 🕒 **Última:** \`${state.lastTag}\`\n`;
+  });
+
+  const embed = new EmbedBuilder()
+    .setTitle('📜 ❄️ PAINEL OFICIAL DE ROTAÇÃO - MASMORRA DE GELO ❄️ 📜')
+    .setColor('#00CCFF')
+    .setDescription(
+      `**Última Atualização:** \`${now}\`\n` +
+      `🔄 **Sequência de Tags (Gelo):** [ ${geloTags.map(t => `\`${t}\``).join(' ➡️ ')} ]\n\n` +
+      `*Atenção: A rodada rotaciona automaticamente a cada ciclo de spawn dos bosses de Gelo (MF).*`
+    )
+    .addFields(
+      { name: '❄️ BOSSES DE GELO (Masmorra de Gelo)', value: geloText || 'Nenhum', inline: false }
     )
     .setTimestamp()
     .setFooter({ text: `${getRandomJoke()}` });

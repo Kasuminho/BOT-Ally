@@ -55,7 +55,7 @@ export async function handleCancelSelect(interaction) {
 
   if (removed) {
     let revertText = '';
-    if (targetBoss && targetBoss.category === 'interserver' && targetBoss.previousLastTag && targetBoss.previousNextTag) {
+    if (targetBoss && (targetBoss.category === 'interserver' || targetBoss.category === 'gelo') && targetBoss.previousLastTag && targetBoss.previousNextTag) {
       await revertBossTurn(
         targetBoss.bossId,
         targetBoss.name,

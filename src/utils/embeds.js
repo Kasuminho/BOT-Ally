@@ -67,12 +67,15 @@ export function createDailyFixedEmbed(noticeType) {
 export function createCustomBossEmbed(boss, noticeType) {
   const embed = new EmbedBuilder().setTimestamp();
   const unixSec = Math.floor(boss.spawnTimestamp / 1000);
-  const isInterserver = boss.category === 'interserver';
-  const state = isInterserver ? getBossRotationState(boss.bossId || boss.id) : null;
+  const isRotatable = boss.category === 'interserver' || boss.category === 'gelo';
+  const isGelo = boss.category === 'gelo';
+  const state = isRotatable ? getBossRotationState(boss.bossId || boss.id) : null;
 
   // TAG da vez para este spawn e próxima TAG da fila
   const currentTag = boss.targetTag || state?.nextTag || state?.lastTag;
-  const upcomingTag = boss.nextTag || (currentTag ? getNextTagInSequence(currentTag) : state?.nextTag);
+  const upcomingTag = boss.nextTag || (currentTag ? getNextTagInSequence(currentTag, isGelo) : state?.nextTag);
+  const tagLabel = isGelo ? '🎯 Vez da TAG (Gelo)' : '🎯 Vez da TAG (União)';
+  const spawnTagLabel = isGelo ? '🎯 TAG Atual do Drop (Gelo)' : '🎯 TAG Atual do Drop (União)';
 
   if (noticeType === 'REGISTERED') {
     embed
@@ -85,11 +88,9 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:F> (<t:${unixSec}:R>)`, inline: false }
       );
 
-    if (isInterserver && currentTag) {
+    if (isRotatable && currentTag) {
       const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: tagInfo, inline: true });
-    } else {
-      embed.addFields({ name: '🛡️ Tipo', value: `**Servidor (Gelo)**`, inline: true });
+      embed.addFields({ name: tagLabel, value: tagInfo, inline: true });
     }
 
     embed
@@ -107,9 +108,9 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
       );
 
-    if (isInterserver && currentTag) {
+    if (isRotatable && currentTag) {
       const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: tagInfo, inline: true });
+      embed.addFields({ name: tagLabel, value: tagInfo, inline: true });
     }
 
     embed.setFooter({ text: `${getRandomJoke()}` });
@@ -125,9 +126,9 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
       );
 
-    if (isInterserver && currentTag) {
+    if (isRotatable && currentTag) {
       const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
-      embed.addFields({ name: '🎯 Vez da TAG (União)', value: tagInfo, inline: true });
+      embed.addFields({ name: tagLabel, value: tagInfo, inline: true });
     }
 
     embed.setFooter({ text: `${getRandomJoke()}` });
@@ -142,9 +143,9 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '📍 Local', value: `**${boss.location}**`, inline: true }
       );
 
-    if (isInterserver && currentTag) {
+    if (isRotatable && currentTag) {
       const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
-      embed.addFields({ name: '🎯 TAG Atual do Drop (União)', value: tagInfo, inline: false });
+      embed.addFields({ name: spawnTagLabel, value: tagInfo, inline: false });
     }
 
     embed.setFooter({ text: `${getRandomJoke()}` });
@@ -178,10 +179,11 @@ export function createBossListEmbed(bosses) {
     desc += `📍 **Local:** ${b.location}\n`;
     desc += `⏰ **Nascimento:** <t:${unixSec}:T> (<t:${unixSec}:R>)\n`;
 
-    if (b.category === 'interserver') {
+    if (b.category === 'interserver' || b.category === 'gelo') {
       const state = getBossRotationState(b.bossId || b.id);
       const tagVez = b.targetTag || state?.nextTag || state?.lastTag;
-      desc += `🎯 **TAG da Vez:** \`${tagVez}\`\n`;
+      const catTitle = b.category === 'gelo' ? 'Gelo' : 'União';
+      desc += `🎯 **TAG da Vez (${catTitle}):** \`${tagVez}\`\n`;
     }
 
     desc += `👤 **Por:** ${b.createdBy}\n`;
