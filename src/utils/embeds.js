@@ -1,6 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
 import { getRandomJoke } from './jokes.js';
-import { getBossRotationState } from './rotation.js';
+import { getBossRotationState, getNextTagInSequence } from './rotation.js';
 
 /**
  * Cria o Embed "enfeitado" para o aviso diário fixo das 23:00 (TA 2 / TA 3 / TA 4 - FFA)
@@ -71,8 +71,8 @@ export function createCustomBossEmbed(boss, noticeType) {
   const state = isInterserver ? getBossRotationState(boss.bossId || boss.id) : null;
 
   // TAG da vez para este spawn e próxima TAG da fila
-  const currentTag = boss.targetTag || state?.lastTag || state?.nextTag;
-  const upcomingTag = boss.nextTag || state?.nextTag;
+  const currentTag = boss.targetTag || state?.nextTag || state?.lastTag;
+  const upcomingTag = boss.nextTag || (currentTag ? getNextTagInSequence(currentTag) : state?.nextTag);
 
   if (noticeType === 'REGISTERED') {
     embed
@@ -180,7 +180,7 @@ export function createBossListEmbed(bosses) {
 
     if (b.category === 'interserver') {
       const state = getBossRotationState(b.bossId || b.id);
-      const tagVez = b.targetTag || state?.lastTag || state?.nextTag;
+      const tagVez = b.targetTag || state?.nextTag || state?.lastTag;
       desc += `🎯 **TAG da Vez:** \`${tagVez}\`\n`;
     }
 
