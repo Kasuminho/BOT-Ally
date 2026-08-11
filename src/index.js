@@ -3,7 +3,7 @@ import { config, validateConfig } from './config.js';
 import { initScheduler } from './services/scheduler.js';
 import { registerCommands } from './deploy-commands.js';
 import { isAuthorized } from './middleware/auth.js';
-import { updateRotationPanel } from './utils/rotation.js';
+import { updateRotationPanel, updateGeloRotationPanel } from './utils/rotation.js';
 
 import * as bossCmd from './commands/boss.js';
 import * as listarCmd from './commands/listarBosses.js';
@@ -48,8 +48,9 @@ client.once('ready', async () => {
     status: 'online'
   });
 
-  // Atualizar imediatamente a mensagem fixa do painel de rotação ao iniciar
+  // Atualizar imediatamente as mensagens fixas dos painéis de rotação ao iniciar
   await updateRotationPanel(client);
+  await updateGeloRotationPanel(client);
 
   // Inicializar o Scheduler (23:00 Fixo & Timers de Outros Bosses)
   initScheduler(client);
