@@ -295,7 +295,7 @@ export function createPanelEmbed() {
 
   taGrotescaBosses.forEach(b => {
     const state = getBossRotationState(b.id);
-    const line = `• **${b.name}** (${b.location})\n  └ 🎯 **Próxima:** \`${state.nextTag}\` | 🕒 **Última:** \`${state.lastTag}\`\n`;
+    const line = `• **${b.name}** (${b.location})\n  └ 🎯 **Vez da TAG:** \`${state.nextTag}\` | 🕒 **Última:** \`${state.lastTag}\`\n`;
 
     if (b.location.startsWith('TA')) {
       taText += line;
@@ -335,7 +335,7 @@ export function createGeloPanelEmbed() {
   let geloText = '';
   geloBosses.forEach(b => {
     const state = getBossRotationState(b.id);
-    geloText += `• **${b.name}** (${b.location})\n  └ 🎯 **Próxima:** \`${state.nextTag}\` | 🕒 **Última:** \`${state.lastTag}\`\n`;
+    geloText += `• **${b.name}** (${b.location})\n  └ 🎯 **Vez da TAG:** \`${state.nextTag}\` | 🕒 **Última:** \`${state.lastTag}\`\n`;
   });
 
   const embed = new EmbedBuilder()
