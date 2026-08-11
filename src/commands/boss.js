@@ -174,29 +174,12 @@ export async function handleModalSubmit(interaction) {
     });
   }
 
-  // Se for boss de TA, Grotesca ou Gelo, executa a rotação automaticamente
   let rotText = '';
-  let targetTag = null;
-  let nextTag = null;
-  let previousLastTag = null;
-  let previousNextTag = null;
 
   if (bossObj.category === 'interserver' || bossObj.category === 'gelo') {
-    const prevState = getBossRotationState(bossObj.id);
-    previousLastTag = prevState.lastTag;
-    previousNextTag = prevState.nextTag;
-
-    const newState = await rotateBossTurn(
-      bossObj.id,
-      bossObj.name,
-      null,
-      { authorTag: interaction.user.tag, authorId: interaction.user.id },
-      interaction.client
-    );
-    targetTag = newState.lastTag;
-    nextTag = newState.nextTag;
+    const rotState = getBossRotationState(bossObj.id);
     const catLabel = bossObj.category === 'gelo' ? 'Gelo MF' : 'União';
-    rotText = `\n🔄 **Rodada (${catLabel}):** O turno deste boss foi confirmado para \`${newState.lastTag}\` e avançou para a próxima TAG \`${newState.nextTag}\` (Painel fixo atualizado).`;
+    rotText = `\n🎯 **Vez da TAG (${catLabel}):** \`${rotState.nextTag}\` (conforme Painel Fixo).`;
   }
 
   const spawnDateTime = now.plus({ minutes: totalMinutes });
@@ -212,10 +195,6 @@ export async function handleModalSubmit(interaction) {
     location: bossObj.location,
     category: bossObj.category,
     categoryLabel: bossObj.categoryLabel,
-    targetTag,
-    nextTag,
-    previousLastTag,
-    previousNextTag,
     spawnTimestamp,
     createdBy: interaction.user.tag,
     channelId: targetChannelId,

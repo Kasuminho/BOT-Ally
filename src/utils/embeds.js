@@ -71,9 +71,9 @@ export function createCustomBossEmbed(boss, noticeType) {
   const isGelo = boss.category === 'gelo';
   const state = isRotatable ? getBossRotationState(boss.bossId || boss.id) : null;
 
-  // TAG da vez para este spawn e próxima TAG da fila
-  const currentTag = boss.targetTag || state?.nextTag || state?.lastTag;
-  const upcomingTag = boss.nextTag || (currentTag ? getNextTagInSequence(currentTag, isGelo) : state?.nextTag);
+  // TAG da vez para este spawn (conforme Painel Fixo) e próxima TAG da fila
+  const currentTag = boss.targetTag || state?.nextTag;
+  const upcomingTag = boss.nextTag || (currentTag ? getNextTagInSequence(currentTag, isGelo) : null);
   const tagLabel = isGelo ? '🎯 Vez da TAG (Gelo)' : '🎯 Vez da TAG (União)';
   const spawnTagLabel = isGelo ? '🎯 TAG Atual do Drop (Gelo)' : '🎯 TAG Atual do Drop (União)';
 
@@ -181,7 +181,7 @@ export function createBossListEmbed(bosses) {
 
     if (b.category === 'interserver' || b.category === 'gelo') {
       const state = getBossRotationState(b.bossId || b.id);
-      const tagVez = b.targetTag || state?.nextTag || state?.lastTag;
+      const tagVez = b.targetTag || state?.nextTag;
       const catTitle = b.category === 'gelo' ? 'Gelo' : 'União';
       desc += `🎯 **TAG da Vez (${catTitle}):** \`${tagVez}\`\n`;
     }
