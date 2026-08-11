@@ -206,11 +206,6 @@ async function checkCustomBossReminders(client) {
             embeds: [embed]
           });
           console.log(`✅ [SCHEDULER] Aviso SPAWN enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
-
-          // Executa a rotação automaticamente ao nascer se for boss de TA, Grotesca ou Gelo
-          if (boss.category === 'interserver' || boss.category === 'gelo') {
-            await rotateBossTurn(boss.bossId, boss.name, null, { authorTag: 'BOT Ally (Spawn)', authorId: 'SYSTEM' }, client);
-          }
         }
       } catch (err) {
         console.error(`❌ [SCHEDULER] Erro ao enviar aviso SPAWN para ${boss.name}:`, err);

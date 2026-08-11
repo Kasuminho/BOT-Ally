@@ -177,9 +177,15 @@ export async function handleModalSubmit(interaction) {
   let rotText = '';
 
   if (bossObj.category === 'interserver' || bossObj.category === 'gelo') {
-    const rotState = getBossRotationState(bossObj.id);
+    const newState = await rotateBossTurn(
+      bossObj.id,
+      bossObj.name,
+      null,
+      { authorTag: interaction.user.tag, authorId: interaction.user.id },
+      interaction.client
+    );
     const catLabel = bossObj.category === 'gelo' ? 'Gelo MF' : 'União';
-    rotText = `\n🎯 **Vez da TAG (${catLabel}):** \`${rotState.nextTag}\` (conforme Painel Fixo).`;
+    rotText = `\n🔄 **Rodada (${catLabel}):** O turno deste boss foi confirmado para \`${newState.lastTag}\` e avançou para a próxima TAG \`${newState.nextTag}\` (Painel fixo atualizado).`;
   }
 
   const spawnDateTime = now.plus({ minutes: totalMinutes });
