@@ -4,7 +4,7 @@ import { db } from '../database/db.js';
 import { createDailyFixedEmbed, createCustomBossEmbed } from '../utils/embeds.js';
 import { config } from '../config.js';
 import { MEMBROS_ROLE_ID } from '../utils/bossList.js';
-import { rotateBossTurn } from '../utils/rotation.js';
+import { rotateBossTurn, updateRotationPanel, updateGeloRotationPanel } from '../utils/rotation.js';
 
 /**
  * Retorna se o boss pertence à Masmorra de Gelo
@@ -79,6 +79,18 @@ export function initScheduler(client) {
   // 4. Cron Job Minuto a Minuto para rastrear Outros Bosses agendados
   cron.schedule('* * * * *', async () => {
     await checkCustomBossReminders(client);
+  }, {
+    timezone: 'America/Sao_Paulo'
+  });
+
+  // 5. Cron Job a cada 5 minutos para recarregar as mensagens fixas dos Painéis de Rotação (Interserver e Gelo)
+  cron.schedule('*/5 * * * *', async () => {
+    try {
+      await updateRotationPanel(client);
+      await updateGeloRotationPanel(client);
+    } catch (err) {
+      console.error('❌ [SCHEDULER] Erro ao recarregar painéis de rotação a cada 5m:', err);
+    }
   }, {
     timezone: 'America/Sao_Paulo'
   });
