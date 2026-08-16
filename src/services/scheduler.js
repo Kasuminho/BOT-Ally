@@ -82,18 +82,6 @@ export function initScheduler(client) {
   }, {
     timezone: 'America/Sao_Paulo'
   });
-
-  // 5. Cron Job a cada 5 minutos para recarregar as mensagens fixas dos Painéis de Rotação (Interserver e Gelo)
-  cron.schedule('*/5 * * * *', async () => {
-    try {
-      await updateRotationPanel(client);
-      await updateGeloRotationPanel(client);
-    } catch (err) {
-      console.error('❌ [SCHEDULER] Erro ao recarregar painéis de rotação a cada 5m:', err);
-    }
-  }, {
-    timezone: 'America/Sao_Paulo'
-  });
 }
 
 /**
