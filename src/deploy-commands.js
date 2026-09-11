@@ -7,6 +7,8 @@ import * as testarCmd from './commands/testar.js';
 import * as cargostaffCmd from './commands/cargostaff.js';
 import * as auditoriaCmd from './commands/auditoria.js';
 import * as rotacaoCmd from './commands/rotacao.js';
+import * as registrarStatusCmd from './commands/registrarStatus.js';
+import * as consultarStatusCmd from './commands/consultarStatus.js';
 
 const commands = [
   bossCmd.data.toJSON(),
@@ -15,7 +17,9 @@ const commands = [
   testarCmd.data.toJSON(),
   cargostaffCmd.data.toJSON(),
   auditoriaCmd.data.toJSON(),
-  rotacaoCmd.data.toJSON()
+  rotacaoCmd.data.toJSON(),
+  registrarStatusCmd.data.toJSON(),
+  consultarStatusCmd.data.toJSON()
 ];
 
 export async function registerCommands() {

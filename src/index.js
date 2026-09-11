@@ -12,6 +12,8 @@ import * as testarCmd from './commands/testar.js';
 import * as cargostaffCmd from './commands/cargostaff.js';
 import * as auditoriaCmd from './commands/auditoria.js';
 import * as rotacaoCmd from './commands/rotacao.js';
+import * as registrarStatusCmd from './commands/registrarStatus.js';
+import * as consultarStatusCmd from './commands/consultarStatus.js';
 
 validateConfig();
 
@@ -26,7 +28,17 @@ const client = new Client({
 
 // Registra os comandos na coleção
 client.commands = new Collection();
-const commandsList = [bossCmd, listarCmd, cancelarCmd, testarCmd, cargostaffCmd, auditoriaCmd, rotacaoCmd];
+const commandsList = [
+  bossCmd,
+  listarCmd,
+  cancelarCmd,
+  testarCmd,
+  cargostaffCmd,
+  auditoriaCmd,
+  rotacaoCmd,
+  registrarStatusCmd,
+  consultarStatusCmd
+];
 
 for (const cmd of commandsList) {
   client.commands.set(cmd.data.name, cmd);
@@ -56,13 +68,18 @@ client.once('ready', async () => {
   initScheduler(client);
 });
 
+// Comandos acessíveis a todos os membros (sem restrição Staff)
+const PUBLIC_COMMANDS = ['registrar-status', 'consultar-status'];
+
 // Manipulação centralizada de interações no Discord
 client.on('interactionCreate', async interaction => {
   try {
-    // Verificação de Autorização (SuperAdmins, Staff ou Cargos Autorizados)
-    if (!isAuthorized(interaction)) {
+    const isPublic = interaction.isChatInputCommand() && PUBLIC_COMMANDS.includes(interaction.commandName);
+
+    // Verificação de Autorização (SuperAdmins, Staff ou Cargos Autorizados) para comandos restritos
+    if (!isPublic && !isAuthorized(interaction)) {
       const unauthorizedMessage = {
-        content: '❌ **Acesso negado!** Apenas membros da **Staff** ou cargos autorizados podem utilizar os comandos do BOT Ally.',
+        content: '❌ **Acesso negado!** Apenas membros da **Staff** ou cargos autorizados podem utilizar este comando do BOT Ally.',
         ephemeral: true
       };
       if (interaction.replied || interaction.deferred) {

@@ -8,6 +8,7 @@ export const config = {
   announcementChannelId: process.env.ANNOUNCEMENT_CHANNEL_ID || null,
   geloAnnouncementChannelId: process.env.GELO_ANNOUNCEMENT_CHANNEL_ID || null,
   bossRoleId: process.env.BOSS_ROLE_ID || null,
+  geminiApiKey: process.env.GEMINI_API_KEY || null,
 };
 
 export function validateConfig() {
