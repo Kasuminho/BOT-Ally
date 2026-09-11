@@ -14,6 +14,7 @@ import * as auditoriaCmd from './commands/auditoria.js';
 import * as rotacaoCmd from './commands/rotacao.js';
 import * as registrarStatusCmd from './commands/registrarStatus.js';
 import * as consultarStatusCmd from './commands/consultarStatus.js';
+import * as listarStatusCmd from './commands/listarStatus.js';
 
 validateConfig();
 
@@ -37,7 +38,8 @@ const commandsList = [
   auditoriaCmd,
   rotacaoCmd,
   registrarStatusCmd,
-  consultarStatusCmd
+  consultarStatusCmd,
+  listarStatusCmd
 ];
 
 for (const cmd of commandsList) {
@@ -69,7 +71,7 @@ client.once('ready', async () => {
 });
 
 // Comandos acessíveis a todos os membros (sem restrição Staff)
-const PUBLIC_COMMANDS = ['registrar-status', 'consultar-status'];
+const PUBLIC_COMMANDS = ['registrar-status', 'consultar-status', 'listar'];
 
 // Manipulação centralizada de interações no Discord
 client.on('interactionCreate', async interaction => {
