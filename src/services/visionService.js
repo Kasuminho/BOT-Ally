@@ -118,9 +118,10 @@ Retorne APENAS um objeto JSON válido no formato estrito abaixo, sem marcações
 Se algum dado não estiver visível na imagem, coloque null naquele campo específico.`;
 
   const candidateModels = [
+    'gemini-3.6-flash',
+    'gemini-3.0-flash',
     'gemini-2.5-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-latest'
+    'gemini-1.5-flash'
   ];
   let lastError = null;
 
