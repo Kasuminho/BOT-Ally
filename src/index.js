@@ -15,6 +15,11 @@ import * as rotacaoCmd from './commands/rotacao.js';
 import * as registrarStatusCmd from './commands/registrarStatus.js';
 import * as consultarStatusCmd from './commands/consultarStatus.js';
 import * as listarStatusCmd from './commands/listarStatus.js';
+import * as checkinCmd from './commands/checkin.js';
+import * as eventoCmd from './commands/evento.js';
+import * as rankingCmd from './commands/ranking.js';
+import { checkinService } from './services/checkinService.js';
+import { eventsDb } from './database/eventsDb.js';
 
 validateConfig();
 
@@ -39,7 +44,10 @@ const commandsList = [
   rotacaoCmd,
   registrarStatusCmd,
   consultarStatusCmd,
-  listarStatusCmd
+  listarStatusCmd,
+  checkinCmd,
+  eventoCmd,
+  rankingCmd
 ];
 
 for (const cmd of commandsList) {
@@ -68,15 +76,42 @@ client.once('ready', async () => {
 
   // Inicializar o Scheduler (23:00 Fixo & Timers de Outros Bosses)
   initScheduler(client);
+
+  // Sincroniza e processa imediatamente check-ins pendentes/expirados
+  await checkinService.checkActiveCheckins(client);
 });
 
 // Comandos acessíveis a todos os membros (sem restrição Staff)
-const PUBLIC_COMMANDS = ['registrar-status', 'consultar-status', 'listar'];
+const PUBLIC_COMMANDS = ['registrar-status', 'consultar-status', 'listar', 'ranking'];
 
 // Manipulação centralizada de interações no Discord
 client.on('interactionCreate', async interaction => {
   try {
-    const isPublic = interaction.isChatInputCommand() && PUBLIC_COMMANDS.includes(interaction.commandName);
+    // 0. Autocomplete para seleção de eventos em /checkin
+    if (interaction.isAutocomplete()) {
+      if (interaction.commandName === 'checkin') {
+        const focusedOption = interaction.options.getFocused(true);
+        if (focusedOption.name === 'evento') {
+          const all = Object.values(eventsDb.getAll());
+          const q = (focusedOption.value || '').toLowerCase();
+          const filtered = all
+            .filter(e => e.name.toLowerCase().includes(q) || e.id.toLowerCase().includes(q))
+            .slice(0, 25);
+          return await interaction.respond(
+            filtered.map(e => ({ name: `${e.name} (${e.points} pts - ${e.type})`, value: e.id }))
+          );
+        }
+      }
+      return;
+    }
+
+    const isCheckinButton = interaction.isButton() && interaction.customId.startsWith('checkin_');
+    const isPilotModal = interaction.isModalSubmit() && interaction.customId.startsWith('modal_pilot_');
+    const isPilotSelect = interaction.isUserSelectMenu() && interaction.customId.startsWith('checkin_pilot_select_');
+    const isPublic = (interaction.isChatInputCommand() && PUBLIC_COMMANDS.includes(interaction.commandName)) ||
+      isCheckinButton ||
+      isPilotModal ||
+      isPilotSelect;
 
     // Verificação de Autorização (SuperAdmins, Staff ou Cargos Autorizados) para comandos restritos
     if (!isPublic && !isAuthorized(interaction)) {
@@ -97,13 +132,22 @@ client.on('interactionCreate', async interaction => {
       if (!command) return;
       await command.execute(interaction);
     }
-    // 2. Botões Interativos (Navegação de Paginação)
+    // 2. Botões Interativos (Navegação e Check-ins)
     else if (interaction.isButton()) {
       if (interaction.customId.startsWith('audit_page_')) {
         await auditoriaCmd.handleAuditPagination(interaction);
+      } else if (interaction.customId.startsWith('checkin_confirm_')) {
+        const chkId = interaction.customId.replace('checkin_confirm_', '');
+        await checkinService.handleConfirmPresence(interaction, chkId);
+      } else if (interaction.customId.startsWith('checkin_pilot_')) {
+        const chkId = interaction.customId.replace('checkin_pilot_', '');
+        await checkinService.handlePilotButton(interaction, chkId);
+      } else if (interaction.customId.startsWith('checkin_cancel_')) {
+        const chkId = interaction.customId.replace('checkin_cancel_', '');
+        await checkinService.handleCancelPresence(interaction, chkId);
       }
     }
-    // 3. Select Menus (Dropdown)
+    // 3. String Select Menus (Dropdown)
     else if (interaction.isStringSelectMenu()) {
       if (interaction.customId === 'select_boss') {
         await bossCmd.handleSelectMenu(interaction);
@@ -111,10 +155,20 @@ client.on('interactionCreate', async interaction => {
         await cancelarCmd.handleCancelSelect(interaction);
       }
     }
-    // 4. Modals Submit
+    // 4. User Select Menus (Dropdown de Usuários para Check-in Piloto)
+    else if (interaction.isUserSelectMenu()) {
+      if (interaction.customId.startsWith('checkin_pilot_select_')) {
+        const chkId = interaction.customId.replace('checkin_pilot_select_', '');
+        await checkinService.handlePilotUserSelect(interaction, chkId);
+      }
+    }
+    // 5. Modals Submit
     else if (interaction.isModalSubmit()) {
       if (interaction.customId.startsWith('modal_timer_')) {
         await bossCmd.handleModalSubmit(interaction);
+      } else if (interaction.customId.startsWith('modal_pilot_')) {
+        const chkId = interaction.customId.replace('modal_pilot_', '');
+        await checkinService.handlePilotModalSubmit(interaction, chkId);
       }
     }
   } catch (error) {

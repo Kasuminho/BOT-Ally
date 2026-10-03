@@ -36,9 +36,34 @@ Após a seleção no menu, digita-se o tempo que falta no formato `HH:MM` (ex: `
 
 ---
 
-### 3. Outros Comandos
-- `/bosses`: Lista todos os bosses agendados com tempo restante dinâmico do Discord.
-- `/cancelarboss`: Permite selecionar um boss e cancelar o timer.
+### 3. Comandos & Funcionalidades da v2.4.0
+- `/checkin [abrir|listar-ativos|detalhes|remover-presenca|encerrar]`: Sistema completo de presença com botões interativos, suporte a piloto (seletor de membros do Discord) e auditoria de remoção.
+- `/ranking [semanal|mensal|geral]`: Classificação de presença da guilda com apuração semanal (Domingo 00:01) e mensal (dia 01 às 00:01).
+- `/evento [listar|editar|pontos|cadastrar|remover]`: Catálogo oficial de bosses/eventos com configuração de pontuação (1 a 5 pts) e duração de timers.
+- `/bosses` ou `/listar`: Lista todos os bosses agendados com contagem regressiva dinâmica e TAG da vez.
+- `/cancelarboss`: Cancela um timer ativo e reverte a rotação.
+- `/rotacao [painel|painelgelo|girar|tags]`: Gerencia os painéis fixos e o rodízio de drops da união (Grotesca/Interserver e Gelo).
+- `/registrar-status`: Registra os status do jogador via print e leitura por IA multimodal (Gemini Vision).
+- `/consultar-status`: Consulta a ficha de status de qualquer membro da guilda.
+- `/listar [acerto] [defesa] [desenvolvimento]`: Filtra membros cadastrados por atributos mínimos.
+- `/auditoria [pagina]`: Visualiza o histórico de até 500 ações da Staff com paginação interativa.
+- `/cargostaff [adicionar|remover|listar]`: Gerencia cargos autorizados dinamicamente.
+- `/testar`: Testa os modelos de Embeds de avisos no canal.
+
+### 🌟 Destaques da v2.4.0
+- **Check-in de Piloto**: Permite que quem pilota confirme a presença do dono da conta pelo Discord — ambos recebem pontuação integral com trava anti-duplicação.
+- **Horário Corujão (Boost Time)**: Bosses nascidos entre 00:00 e 07:00 concedem automaticamente +2 pontos de bônus com visual roxo.
+- **TA 2 e TA 3 Escalonados**: Sequência de abertura independente às 23:00 (TA 2 em 1m, TA 3 em 3m, e TA 4 preparado).
+- **GvG e Global Recorrentes**: Avisos prévios (20m, 5m, início) automáticos para GvG (Quarta e Sábado às 21h) e Masmorra Global (Quinta e Domingo às 22h).
+
+---
+
+## 📚 Documentação Técnica & Otimização de IA
+Para desenvolvedores e assistentes de IA (evitando consumo excessivo de tokens):
+- 📘 [AGENTS.md](AGENTS.md) - Regras estritas de economia de contexto, mapa de arquivos e esquemas de dados.
+- 📐 [ARCHITECTURE.md](ARCHITECTURE.md) - Arquitetura completa, fluxos do cron, máquina de estados da rotação e pipeline da IA.
+- ⚡ [TOKEN_OPTIMIZATION.md](TOKEN_OPTIMIZATION.md) - Guia contra ralos de tokens e comandos de terminal leves.
+- 🤖 [GEMINI.md](GEMINI.md) - Diretrizes automáticas de workspace para o Antigravity / Gemini CLI.
 
 ---
 

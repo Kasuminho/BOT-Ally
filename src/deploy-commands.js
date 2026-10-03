@@ -10,6 +10,9 @@ import * as rotacaoCmd from './commands/rotacao.js';
 import * as registrarStatusCmd from './commands/registrarStatus.js';
 import * as consultarStatusCmd from './commands/consultarStatus.js';
 import * as listarStatusCmd from './commands/listarStatus.js';
+import * as checkinCmd from './commands/checkin.js';
+import * as eventoCmd from './commands/evento.js';
+import * as rankingCmd from './commands/ranking.js';
 
 const commands = [
   bossCmd.data.toJSON(),
@@ -21,7 +24,10 @@ const commands = [
   rotacaoCmd.data.toJSON(),
   registrarStatusCmd.data.toJSON(),
   consultarStatusCmd.data.toJSON(),
-  listarStatusCmd.data.toJSON()
+  listarStatusCmd.data.toJSON(),
+  checkinCmd.data.toJSON(),
+  eventoCmd.data.toJSON(),
+  rankingCmd.data.toJSON()
 ];
 
 export async function registerCommands() {

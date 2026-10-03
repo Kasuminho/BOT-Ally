@@ -29,10 +29,11 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction) {
-  // Verificação estrita de SuperAdmin (Apenas Você + Knower)
-  if (!isSuperAdmin(interaction.user.id)) {
+  // Verificação de SuperAdmin ou Dono do Servidor (facilita homologação em outros servidores)
+  const isOwner = interaction.guild && interaction.guild.ownerId === interaction.user.id;
+  if (!isSuperAdmin(interaction.user.id) && !isOwner) {
     return interaction.reply({
-      content: '❌ **Acesso negado!** Apenas os SuperAdmins do BOT Ally têm permissão para usar este comando.',
+      content: '❌ **Acesso negado!** Apenas os SuperAdmins do BOT Ally ou o Dono do Servidor têm permissão para usar este comando.',
       ephemeral: true
     });
   }

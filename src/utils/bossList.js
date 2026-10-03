@@ -1,4 +1,4 @@
-export const MEMBROS_ROLE_ID = '1526217487274741947';
+export const MEMBROS_ROLE_ID = process.env.MEMBROS_ROLE_ID || process.env.BOSS_ROLE_ID || '1526217487274741947';
 
 export const BOSS_LIST = [
   // Interserver (@everyone)

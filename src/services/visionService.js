@@ -5,7 +5,7 @@ import { config } from '../config.js';
 const queue = [];
 let isProcessing = false;
 const executionTimestamps = [];
-const MAX_REQUESTS_PER_MINUTE = 5;
+const MAX_REQUESTS_PER_MINUTE = config.geminiRateLimit || 5;
 const ONE_MINUTE_MS = 60 * 1000;
 
 /**
@@ -117,12 +117,9 @@ Retorne APENAS um objeto JSON válido no formato estrito abaixo, sem marcações
 }
 Se algum dado não estiver visível na imagem, coloque null naquele campo específico.`;
 
-  const candidateModels = [
-    'gemini-3.6-flash',
-    'gemini-3.0-flash',
-    'gemini-2.5-flash',
-    'gemini-1.5-flash'
-  ];
+  const candidateModels = config.geminiModel
+    ? [config.geminiModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+    : ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
   let lastError = null;
 
   for (const modelName of candidateModels) {

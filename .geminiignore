@@ -1,0 +1,10 @@
+# Antigravity / Gemini Codebase Ignore
+node_modules/
+package-lock.json
+data/
+*.log
+.git/
+.env
+.env.*
+icontainer.env*
+*.tmp

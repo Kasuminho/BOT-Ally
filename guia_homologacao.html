@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Guia Oficial de Comandos e Homologação - BOT Ally</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 15mm 12mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      background-color: #ffffff;
+      font-size: 11pt;
+      line-height: 1.5;
+    }
+    .header {
+      border-bottom: 2px solid #3b82f6;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .header-title h1 {
+      font-size: 20pt;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-title p {
+      font-size: 10.5pt;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-purple { background: #f3e8ff; color: #7e22ce; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-amber { background: #fef3c7; color: #b45309; }
+
+    h2 {
+      font-size: 13pt;
+      color: #0f172a;
+      margin: 18px 0 10px 0;
+      padding-bottom: 4px;
+      border-bottom: 1.5px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    h3 {
+      font-size: 11.5pt;
+      color: #1e293b;
+      margin: 12px 0 6px 0;
+    }
+    p, li {
+      color: #334155;
+    }
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 10px;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #3b82f6;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+    }
+    .card.purple { border-left-color: #8b5cf6; }
+    .card.amber { border-left-color: #f59e0b; }
+    .card.green { border-left-color: #10b981; }
+
+    .card-title {
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 11pt;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    code {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      padding: 1.5px 5px;
+      border-radius: 4px;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 9.5pt;
+      border: 1px solid #e2e8f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px 0;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+    }
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .highlight-row {
+      background-color: #eff6ff !important;
+      font-weight: 600;
+    }
+    .footer {
+      margin-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      text-align: center;
+      font-size: 8.5pt;
+      color: #94a3b8;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-title">
+      <h1>⚔️ BOT Ally — Guia de Homologação</h1>
+      <p>Manual Oficial de Comandos & Procedimentos de Teste (v2.4)</p>
+    </div>
+    <div style="text-align: right;">
+      <span class="badge badge-blue">Homologação Local</span><br>
+      <span style="font-size: 8.5pt; color: #64748b;">Destinatário: <strong>Knower & Staff</strong></span>
+    </div>
+  </div>
+
+  <h2>🚀 1. Roteiro Prático de Homologação (Novas Funcionalidades)</h2>
+  <p>Siga este passo a passo ordenado no servidor do Discord para validar as 5 melhorias implementadas:</p>
+
+  <!-- TESTE A -->
+  <div class="card">
+    <div class="card-title">
+      <span>Teste 1: Catálogo Oficial & Ajuste de Pontos e Timers</span>
+      <span class="badge badge-blue">/evento</span>
+    </div>
+    <ol>
+      <li>No Discord, digite: <code>/evento listar</code></li>
+      <li><strong>O que verificar:</strong> O bot exibirá os 23 bosses agrupados ordenadamente por Tiers de pontuação (⭐ 1 Ponto até 🔥 5 Pontos), junto com o tempo de duração padrão de cada um (ex: 5 min, 10 min).</li>
+      <li>Teste a edição dinâmica digitando: <code>/evento editar evento:tandallon pontos:3 duracao:7</code></li>
+      <li><strong>O que verificar:</strong> O bot confirmará a atualização imediata no banco de dados. Ao abrir o check-in do Tandallon, ele valerá 3 pontos e o contador começará com 7 minutos.</li>
+    </ol>
+  </div>
+
+  <!-- TESTE B -->
+  <div class="card green">
+    <div class="card-title">
+      <span>Teste 2: Check-in Manual com Novo Seletor de Piloto</span>
+      <span class="badge badge-green">Presença & Piloto</span>
+    </div>
+    <ol>
+      <li>No canal de check-in, digite: <code>/checkin abrir evento:tandallon</code></li>
+      <li>O bot enviará o aviso com menção e o painel com 3 botões interativos.</li>
+      <li><strong>Presença Pessoal:</strong> Clique em <code>[ ✅ Confirmar Presença ]</code>. Seu nome aparecerá instantaneamente na lista do cartão.</li>
+      <li><strong>Check-in de Piloto (NOVO):</strong> Clique em <code>[ 🎮 Check-in Piloto ]</code>.</li>
+      <li>O bot responderá privadamente com um <strong>menu de seleção com a lista de membros do Discord</strong>.</li>
+      <li>Escolha um membro do servidor para quem você está pilotando.</li>
+      <li><strong>O que verificar:</strong>
+        <ul>
+          <li>O cartão no canal atualizará para: <code>NomeDoMembro (Piloto: SeuNick)</code>.</li>
+          <li><strong>Ambos recebem pontuação integral:</strong> tanto o piloto quanto o membro pilotado ganham os 3 pontos para a apuração de ranking!</li>
+        </ul>
+      </li>
+      <li><strong>Cancelamento:</strong> Clique em <code>[ 🔄 Cancelar Meu Check-in ]</code>. Ele remove a presença do usuário e os pilotos cadastrados por ele.</li>
+    </ol>
+  </div>
+
+  <!-- TESTE C -->
+  <div class="card purple">
+    <div class="card-title">
+      <span>Teste 3: Horário Corujão (Boost Time Automático)</span>
+      <span class="badge badge-purple">00:00 às 07:00</span>
+    </div>
+    <ul>
+      <li><strong>Regra:</strong> Todo boss ou evento aberto entre <strong>00:00 e 07:00</strong> (GMT-3) recebe automaticamente <strong>+2 pontos de bônus</strong>.</li>
+      <li><strong>Visual Exclusivo:</strong> O embed de aviso, o painel interativo e o resumo final passam para o tema <strong>Roxo</strong> e exibem o selo <code>🌙 [CORUJÃO ATIVO]</code> detalhando os pontos normais + bônus.</li>
+      <li><em>Nota: O horário e o valor dos pontos bônus são configuráveis via variáveis de ambiente.</em></li>
+    </ul>
+  </div>
+
+  <!-- TESTE D -->
+  <div class="card amber">
+    <div class="card-title">
+      <span>Teste 4: T.A 2 e T.A 3 Escalonados (Spawn Fixo das 23:00)</span>
+      <span class="badge badge-amber">Automático</span>
+    </div>
+    <ul>
+      <li>Às <strong>23:00</strong>, no momento do spawn dos bosses fixos:
+        <ul>
+          <li><strong>1 minuto após o spawn:</strong> O bot abre automaticamente o check-in de <strong>T.A 2</strong> (5 min de duração).</li>
+          <li><strong>3 minutos após o spawn:</strong> O bot abre automaticamente o check-in de <strong>T.A 3</strong> (5 min de duração).</li>
+          <li><em>T.A 4 preparado e pronto para ativação quando desejado via configuração (<code>TA4_ENABLED=true</code>).</em></li>
+        </ul>
+      </li>
+      <li>Os dois operam de forma 100% individualizada e garantem tempo hábil para a guilda pontuar em ambos.</li>
+    </ul>
+  </div>
+
+  <!-- TESTE E -->
+  <div class="card purple">
+    <div class="card-title">
+      <span>Teste 5: Eventos Semanais Fixos (GvG & Global)</span>
+      <span class="badge badge-purple">Recorrente</span>
+    </div>
+    <ul>
+      <li><strong>GvG (Guild vs Guild):</strong> Quarta e Sábado às <strong>21:00</strong>.
+        <ul>
+          <li>Avisos prévios automáticos às 20:40 (20m) e 20:55 (5m).</li>
+          <li>Aviso de início às 21:00 e check-in abre 10 minutos após (21:10) com 10 minutos de duração (configuráveis).</li>
+        </ul>
+      </li>
+      <li><strong>Masmorra Global:</strong> Quinta e Domingo às <strong>22:00</strong>.
+        <ul>
+          <li>Avisos prévios às 21:40 (20m), 21:55 (5m) e início às 22:00 para entrada da guilda.</li>
+          <li>A presença é computada diretamente nos bosses do evento conforme forem feitos.</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <!-- TESTE F -->
+  <div class="card">
+    <div class="card-title">
+      <span>Teste 6: Auditoria e Remoção de Presença pela Staff</span>
+      <span class="badge badge-blue">Segurança Staff</span>
+    </div>
+    <ul>
+      <li><strong>Remover Presença:</strong> <code>/checkin remover-presenca membro:@Usuario [id]</code> remove a presença indevida (ativa ou do histórico) e atualiza o painel em tempo real.</li>
+      <li><strong>Auditoria Automática:</strong> A remoção é registrada automaticamente no histórico do <code>/auditoria</code> com quem removeu, data e motivo.</li>
+      <li><strong>Ver Detalhes:</strong> <code>/checkin detalhes id:chk_xxx</code> lista todos os membros e pilotos do evento.</li>
+    </ul>
+  </div>
+
+  <div class="page-break"></div>
+
+  <h2>📋 2. Tabela Oficial de Pontuações & Timers Padronizados</h2>
+  <p>Catálogo base consolidado de acordo com a planilha oficial de eventos da Ally:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 15%;">Tier / Pontos</th>
+        <th style="width: 30%;">Boss / Evento</th>
+        <th style="width: 25%;">Identificador (ID)</th>
+        <th style="width: 15%;">Duração</th>
+        <th style="width: 15%;">Tipo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>⭐ 1 Ponto</strong></td>
+        <td>Rotura</td>
+        <td><code>rotura</code> (ou <code>hotura</code>)</td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td rowspan="5"><strong>🌟 2 Pontos</strong></td>
+        <td>Cavaleiro</td>
+        <td><code>cavaleiro</code></td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Gatfilian</td>
+        <td><code>gatphillian</code> (ou <code>gatfilian</code>)</td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Hakir</td>
+        <td><code>hakir</code></td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Stomid</td>
+        <td><code>stormid</code> (ou <code>stomid</code>)</td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Tigdal</td>
+        <td><code>tigdal</code></td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td rowspan="6"><strong>💫 3 Pontos</strong></td>
+        <td>Damiros</td>
+        <td><code>damiross</code> (ou <code>damiros</code>)</td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Dardalroka</td>
+        <td><code>dardaloca</code> (ou <code>dardalroka</code>)</td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Kafka</td>
+        <td><code>kafka</code></td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Loccius-Abadia</td>
+        <td><code>loccius_abadia</code></td>
+        <td>5 minutos</td>
+        <td>Manual</td>
+      </tr>
+      <tr>
+        <td>Tandallon</td>
+        <td><code>tandallon</code></td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Épica Anônima</td>
+        <td><code>epica_anonima</code></td>
+        <td>5 minutos</td>
+        <td>Manual</td>
+      </tr>
+      <tr>
+        <td rowspan="4"><strong>✨ 4 Pontos</strong></td>
+        <td>Global</td>
+        <td><code>global</code></td>
+        <td>10 minutos</td>
+        <td>Manual</td>
+      </tr>
+      <tr>
+        <td>Karnius</td>
+        <td><code>karnius</code></td>
+        <td>5 minutos</td>
+        <td>Manual</td>
+      </tr>
+      <tr>
+        <td>Melvile</td>
+        <td><code>melville</code> (ou <code>melvile</code>)</td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Pander</td>
+        <td><code>panderre</code> (ou <code>pander</code>)</td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td rowspan="8"><strong>🔥 5 Pontos</strong></td>
+        <td>Baltazar</td>
+        <td><code>balthazard</code> (ou <code>baltazar</code>)</td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Cruzada</td>
+        <td><code>cruzada</code></td>
+        <td>10 minutos</td>
+        <td>Manual</td>
+      </tr>
+      <tr>
+        <td>Dominação</td>
+        <td><code>dominacao</code></td>
+        <td>10 minutos</td>
+        <td>Manual</td>
+      </tr>
+      <tr>
+        <td>GvG</td>
+        <td><code>gvg</code></td>
+        <td>10 minutos</td>
+        <td>Manual</td>
+      </tr>
+      <tr class="highlight-row">
+        <td>T.A 2 (Fixo 23h - 1m após)</td>
+        <td><code>ta2</code></td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr class="highlight-row">
+        <td>T.A 3 (Fixo 23h - 3m após)</td>
+        <td><code>ta3</code></td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>T.A 4</td>
+        <td><code>ta4</code></td>
+        <td>5 minutos</td>
+        <td>Automático</td>
+      </tr>
+      <tr>
+        <td>Zerkal-118</td>
+        <td><code>zerkal_118</code></td>
+        <td>5 minutos</td>
+        <td>Manual</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2>📚 3. Dicionário Completo de Comandos do BOT Ally</h2>
+
+  <h3>🎯 Gerenciamento de Check-ins e Eventos</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 32%;">Comando</th>
+        <th style="width: 50%;">Finalidade</th>
+        <th style="width: 18%;">Permissão</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/checkin abrir [evento] [duracao]</code></td>
+        <td>Abre presença com contagem regressiva e botões interativos. Aceita autocomplete.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/checkin listar-ativos</code></td>
+        <td>Lista os check-ins atualmente abertos e o total de confirmados.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/checkin detalhes [id]</code></td>
+        <td>Exibe lista detalhada dos participantes confirmados e pilotos de um check-in.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/checkin remover-presenca [membro] [id]</code></td>
+        <td>Remove a presença de um membro de um check-in (ativo ou histórico) com auditoria.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/checkin encerrar [id]</code></td>
+        <td>Encerra imediatamente um check-in antes do término do tempo.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/evento listar</code></td>
+        <td>Exibe catálogo completo agrupado por Tiers (1 a 5 pts).</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/evento editar [evento] [pontos] [duracao]</code></td>
+        <td>Modifica os pontos e/ou o tempo do timer de qualquer boss.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/evento cadastrar [id] [nome] [pontos]...</code></td>
+        <td>Cadastra novos eventos ou conteúdos futuros do jogo.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/evento remover [id]</code></td>
+        <td>Remove um evento do catálogo.</td>
+        <td>Staff / Admin</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>🏆 Rankings de Presença da Guilda</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 32%;">Comando</th>
+        <th style="width: 50%;">Finalidade</th>
+        <th style="width: 18%;">Permissão</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/ranking semanal</code></td>
+        <td>Exibe o Top 20 e a posição pessoal do membro na semana atual (Seg 00:00 a Dom 23:59).</td>
+        <td><strong>Público</strong></td>
+      </tr>
+      <tr>
+        <td><code>/ranking mensal</code></td>
+        <td>Exibe a classificação acumulada de presença no mês vigente.</td>
+        <td><strong>Público</strong></td>
+      </tr>
+      <tr>
+        <td><code>/ranking geral</code></td>
+        <td>Exibe o ranking histórico acumulado de todos os tempos.</td>
+        <td><strong>Público</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size: 9pt; color: #64748b; margin-top: -6px;">* Fechamento automático semanal todo Domingo às 00:01 e mensal todo dia 01 às 00:01 via cron job.</p>
+
+  <h3 style="margin-top: 14px;">⏱️ Agendamento de Bosses & Rotação de TAGs</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 32%;">Comando</th>
+        <th style="width: 50%;">Finalidade</th>
+        <th style="width: 18%;">Permissão</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/boss</code></td>
+        <td>Abre menu interativo e modal para agendar timers de bosses com rotação automática da TAG da vez.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/listar</code> ou <code>/bosses</code></td>
+        <td>Lista bosses agendados com countdown em tempo real e a TAG da vez.</td>
+        <td><strong>Público</strong></td>
+      </tr>
+      <tr>
+        <td><code>/cancelarboss</code></td>
+        <td>Cancela um timer agendado e restaura a TAG da vez anterior na rotação.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/rotacao painel</code></td>
+        <td>Publica/atualiza o painel fixo de rotação da <strong>União (Interserver)</strong>.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/rotacao painelgelo</code></td>
+        <td>Publica/atualiza o painel fixo de rotação da <strong>Masmorra de Gelo</strong>.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/rotacao girar [boss] [tag]</code></td>
+        <td>Avança manualmente a TAG da vez de um boss.</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/rotacao tags [fila] [tags]</code></td>
+        <td>Altera ou reordena a lista de TAGs participantes.</td>
+        <td>Staff / Admin</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top: 14px;">📊 Fichas de Status dos Membros (OCR Gemini) & Administração</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 32%;">Comando</th>
+        <th style="width: 50%;">Finalidade</th>
+        <th style="width: 18%;">Permissão</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/registrar-status</code></td>
+        <td>Recebe print do jogo; a IA extrai automaticamente os status (Dano, Defesa, PC, Acerto).</td>
+        <td><strong>Público</strong></td>
+      </tr>
+      <tr>
+        <td><code>/consultar-status [jogador]</code></td>
+        <td>Exibe a ficha completa de atributos de qualquer membro cadastrado.</td>
+        <td><strong>Público</strong></td>
+      </tr>
+      <tr>
+        <td><code>/cargostaff [adicionar|remover|listar]</code></td>
+        <td>Adiciona cargos do Discord autorizados a operar os comandos restritos.</td>
+        <td>SuperAdmin / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/auditoria [pagina]</code></td>
+        <td>Exibe o registro cronológico de auditoria das ações da Staff (até 500 logs).</td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/testar</code></td>
+        <td>Dispara embeds de teste para validação de layout e permissões de canal.</td>
+        <td>Staff / Admin</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    BOT Ally • Documento Técnico de Homologação • Gerado em 01/10/2026
+  </div>
+
+</body>
+</html>

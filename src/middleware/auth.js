@@ -13,13 +13,16 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-export const SUPER_ADMIN_IDS = ['273600843251712020', '672236180934492205'];
+import { config } from '../config.js';
+
+export const SUPER_ADMIN_IDS = config.superAdminIds || ['273600843251712020', '672236180934492205'];
 
 /**
- * Retorna se o usuário é um dos dois SuperAdmins autorizados
+ * Retorna se o usuário é um dos SuperAdmins autorizados
  */
 export function isSuperAdmin(userId) {
-  return SUPER_ADMIN_IDS.includes(userId);
+  const ids = config.superAdminIds || SUPER_ADMIN_IDS;
+  return ids.includes(userId);
 }
 
 /**
