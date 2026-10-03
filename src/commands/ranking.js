@@ -61,5 +61,6 @@ export async function execute(interaction) {
     userPoints
   });
 
-  return interaction.reply({ embeds: [embed] });
+  return interaction.reply({ embeds: [embed], ephemeral: true });
 }
+
