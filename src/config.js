@@ -37,6 +37,9 @@ export const config = {
   gvgTime: process.env.GVG_TIME || '21:00',
   gvgDelayMinutes: Number(process.env.GVG_DELAY_MINUTES) || 10,
   gvgDurationMinutes: Number(process.env.GVG_DURATION_MINUTES) || 10,
+  apiPort: Number(process.env.API_PORT) || 3001,
+  apiKey: process.env.API_KEY || null,
+  corsOrigin: process.env.CORS_ORIGIN || '*',
   superAdminIds: process.env.SUPER_ADMIN_IDS
     ? process.env.SUPER_ADMIN_IDS.split(',').map(s => s.trim()).filter(Boolean)
     : ['273600843251712020', '672236180934492205'],

@@ -50,11 +50,28 @@ Após a seleção no menu, digita-se o tempo que falta no formato `HH:MM` (ex: `
 - `/cargostaff [adicionar|remover|listar]`: Gerencia cargos autorizados dinamicamente.
 - `/testar`: Testa os modelos de Embeds de avisos no canal.
 
-### 🌟 Destaques da v2.4.0
+### 🌟 Destaques da v2.4.0 e v2.5.0
+- **API REST Integrada (v2.5.0)**: Servidor Express nativo na porta `3001` protegido por `API_KEY` para alimentar o site da guilda em tempo real (check-ins ativos, ranking, histórico, ficha do jogador e status).
 - **Check-in de Piloto**: Permite que quem pilota confirme a presença do dono da conta pelo Discord — ambos recebem pontuação integral com trava anti-duplicação.
 - **Horário Corujão (Boost Time)**: Bosses nascidos entre 00:00 e 07:00 concedem automaticamente +2 pontos de bônus com visual roxo.
 - **TA 2 e TA 3 Escalonados**: Sequência de abertura independente às 23:00 (TA 2 em 1m, TA 3 em 3m, e TA 4 preparado).
 - **GvG e Global Recorrentes**: Avisos prévios (20m, 5m, início) automáticos para GvG (Quarta e Sábado às 21h) e Masmorra Global (Quinta e Domingo às 22h).
+
+---
+
+### 🌐 Endpoints da API REST (`http://localhost:3001/api`)
+
+Autenticação via header `Authorization: Bearer <API_KEY>` ou `x-api-key: <API_KEY>`:
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/health` | Status de saúde do bot e uptime (Público) |
+| `GET` | `/api/presencas/ativas` | Check-ins ativos em tempo real com lista de quem confirmou |
+| `GET` | `/api/presencas/ranking` | Ranking da guilda (`?tipo=semanal\|mensal\|geral`, `?limit=50&offset=0`) |
+| `GET` | `/api/presencas/historico` | Histórico dos check-ins passados (`?limit=20&eventId=tandallon`) |
+| `GET` | `/api/presencas/membro/:userId` | Raio-X do membro (pontuação semanal/mensal/geral, ranking e eventos recentes) |
+| `GET` | `/api/membros/status` | Mural de Poder: status in-game dos membros lidos por IA (`?classe=...&sort=pc`) |
+| `GET` | `/api/bosses/agendados` | Lista de bosses com contagem regressiva agendada |
 
 ---
 

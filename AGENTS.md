@@ -21,6 +21,8 @@ src/
 ├── config.js               # Carrega e valida variáveis de ambiente (.env)
 ├── deploy-commands.js      # Registra/atualiza Slash Commands na API do Discord
 ├── index.js                # Inicialização do client Discord, roteamento de interações e eventos
+├── api/
+│   └── server.js           # Servidor HTTP Express REST para integração externa com o site
 ├── commands/
 │   ├── auditoria.js        # /auditoria [pagina] - Paginação de logs em embeds interativos
 │   ├── boss.js             # /boss - Menu dropdown e modal para agendar timers de bosses

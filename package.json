@@ -1,6 +1,6 @@
 {
   "name": "bot-ally",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Bot do Discord para Rastreamento de Bosses, Rotação de Drops e Auditoria - Ally",
   "main": "src/index.js",
   "type": "module",
@@ -21,8 +21,10 @@
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "cors": "^2.8.6",
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7",
+    "express": "^5.3.0",
     "luxon": "^3.5.0",
     "node-cron": "^3.0.3"
   }

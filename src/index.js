@@ -20,6 +20,7 @@ import * as eventoCmd from './commands/evento.js';
 import * as rankingCmd from './commands/ranking.js';
 import { checkinService } from './services/checkinService.js';
 import { eventsDb } from './database/eventsDb.js';
+import { startApiServer } from './api/server.js';
 
 validateConfig();
 
@@ -79,6 +80,9 @@ client.once('ready', async () => {
 
   // Sincroniza e processa imediatamente check-ins pendentes/expirados
   await checkinService.checkActiveCheckins(client);
+
+  // Inicializa a API REST HTTP para integração com site
+  startApiServer(client);
 });
 
 // Comandos acessíveis a todos os membros (sem restrição Staff)
