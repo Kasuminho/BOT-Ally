@@ -59,6 +59,6 @@ export async function registerCommands() {
   }
 }
 
-if (process.argv[1].endsWith('deploy-commands.js')) {
+if (process.argv[1]?.endsWith('deploy-commands.js')) {
   registerCommands();
 }

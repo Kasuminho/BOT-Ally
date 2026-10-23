@@ -50,6 +50,16 @@ export function getChannelsForBoss(boss) {
 }
 
 /**
+ * Retorna o canal de destino principal para o boss (compatibilidade retroativa)
+ * @param {Object} boss 
+ * @returns {string}
+ */
+export function getChannelForBoss(boss) {
+  const channels = getChannelsForBoss(boss);
+  return channels[0] || boss?.channelId || config.announcementChannelId;
+}
+
+/**
  * Retorna a menção de cargo apropriada para o boss:
  * - Se for boss da Masmorra de Gelo:
  *   Se o canal pertencer a uma guilda aliada, menciona a role dessa guilda;
