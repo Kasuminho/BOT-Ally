@@ -1,9 +1,43 @@
 import express from 'express';
 import cors from 'cors';
 import { DateTime } from 'luxon';
-import { config } from '../config.js';
+import { config, ALLIANCE_GUILDS, getGuildForMember } from '../config.js';
 import { checkinDb } from '../database/checkinDb.js';
 import { db } from '../database/db.js';
+
+/**
+ * Resolve a guilda de um membro através do cache do Discord, do histórico de check-ins ou fallback
+ * @param {string} userId 
+ * @param {import('discord.js').Client} [client] 
+ * @returns {string}
+ */
+function resolveMemberGuild(userId, client) {
+  if (!userId) return 'rise';
+
+  // 1. Tenta identificar nos membros cacheados do Discord
+  if (client) {
+    try {
+      for (const guild of client.guilds?.cache?.values() || []) {
+        const member = guild.members?.cache?.get(userId);
+        if (member) {
+          const gKey = getGuildForMember(member);
+          if (gKey) return gKey;
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 2. Tenta identificar no histórico recente de check-ins
+  try {
+    const history = checkinDb.getHistory();
+    for (const chk of history) {
+      const att = chk.attendees?.find(a => a.userId === userId && a.guild);
+      if (att && att.guild) return String(att.guild).toLowerCase().trim();
+    }
+  } catch (_) {}
+
+  return 'rise';
+}
 
 export function createApiApp(client) {
   const app = express();
@@ -59,28 +93,61 @@ export function createApiApp(client) {
     });
   });
 
-  // 2. Check-ins Ativos (Ao Vivo)
+  // 2. Check-ins Ativos (Ao Vivo) - Suporta ?guild=rise|gc|emo|minducas
   app.get('/api/presencas/ativas', (req, res) => {
     try {
       const activeCheckins = checkinDb.getActiveCheckins();
-      const list = Object.values(activeCheckins).map(chk => ({
-        id: chk.id,
-        eventId: chk.eventId,
-        eventName: chk.eventName,
-        basePoints: chk.points,
-        bonusPoints: chk.bonusPoints || 0,
-        totalPointsPerAttendee: (Number(chk.points) || 1) + (Number(chk.bonusPoints) || 0),
-        durationMinutes: chk.durationMinutes,
-        status: chk.status,
-        openedAtISO: chk.openedAtISO,
-        expiresAtISO: chk.expiresAtISO,
-        createdBy: chk.createdBy,
-        totalAttendees: chk.attendees?.length || 0,
-        attendees: chk.attendees || []
-      }));
+      const guildFilter = req.query.guild ? String(req.query.guild).toLowerCase().trim() : null;
+
+      let list = Object.values(activeCheckins).map(chk => {
+        const attendees = (chk.attendees || []).map(att => ({
+          ...att,
+          guild: att.guild ? String(att.guild).toLowerCase().trim() : resolveMemberGuild(att.userId, client)
+        }));
+
+        return {
+          id: chk.id,
+          eventId: chk.eventId,
+          eventName: chk.eventName,
+          guildId: chk.guildId || null,
+          guildName: chk.guildName || (chk.guildId ? chk.guildId.toUpperCase() : null),
+          basePoints: chk.points,
+          bonusPoints: chk.bonusPoints || 0,
+          totalPointsPerAttendee: (Number(chk.points) || 1) + (Number(chk.bonusPoints) || 0),
+          durationMinutes: chk.durationMinutes,
+          status: chk.status,
+          openedAtISO: chk.openedAtISO,
+          expiresAtISO: chk.expiresAtISO,
+          createdBy: chk.createdBy,
+          totalAttendees: attendees.length,
+          attendees
+        };
+      });
+
+      if (guildFilter) {
+        list = list
+          .filter(chk => {
+            if (chk.guildId && chk.guildId.toLowerCase() === guildFilter) return true;
+            if (!chk.guildId) return true;
+            return false;
+          })
+          .map(chk => {
+            if (!chk.guildId) {
+              const filteredAttendees = chk.attendees.filter(a => a.guild === guildFilter);
+              return {
+                ...chk,
+                guildId: guildFilter,
+                totalAttendees: filteredAttendees.length,
+                attendees: filteredAttendees
+              };
+            }
+            return chk;
+          });
+      }
 
       res.json({
         success: true,
+        guild: guildFilter || 'todas',
         total: list.length,
         data: list
       });
@@ -90,39 +157,42 @@ export function createApiApp(client) {
     }
   });
 
-  // 3. Ranking de Presença (Semanal, Mensal ou Geral)
+  // 3. Ranking de Presença (Semanal, Mensal ou Geral) - Suporta ?guild=rise|gc|emo|minducas
   app.get('/api/presencas/ranking', (req, res) => {
     try {
       const type = (req.query.tipo || 'semanal').toLowerCase();
       const limit = Math.max(1, Math.min(Number(req.query.limit) || 100, 500));
       const offset = Math.max(0, Number(req.query.offset) || 0);
       const now = DateTime.now().setZone('America/Sao_Paulo');
+      const guildFilter = req.query.guild ? String(req.query.guild).toLowerCase().trim() : null;
 
       let rankings = [];
       let periodLabel = '';
 
       if (type === 'semanal') {
-        rankings = checkinDb.getWeeklyRanking(now);
+        rankings = checkinDb.getWeeklyRanking(now, guildFilter);
         const startStr = now.startOf('week').toFormat('dd/MM/yyyy');
         const endStr = now.endOf('week').toFormat('dd/MM/yyyy');
         periodLabel = `${startStr} a ${endStr}`;
       } else if (type === 'mensal') {
-        rankings = checkinDb.getMonthlyRanking(now);
+        rankings = checkinDb.getMonthlyRanking(now, guildFilter);
         periodLabel = now.toFormat('LLLL / yyyy');
       } else {
-        rankings = checkinDb.getAllTimeRanking();
+        rankings = checkinDb.getAllTimeRanking(guildFilter);
         periodLabel = 'Geral (Acumulado)';
       }
 
       const total = rankings.length;
       const paginated = rankings.slice(offset, offset + limit).map((item, idx) => ({
         rank: offset + idx + 1,
+        guild: item.guild || 'rise',
         ...item
       }));
 
       res.json({
         success: true,
         tipo: type,
+        guild: guildFilter || 'todas',
         periodo: periodLabel,
         total,
         limit,
@@ -135,31 +205,55 @@ export function createApiApp(client) {
     }
   });
 
-  // 4. Histórico de Presenças Concluídas
+  // 4. Histórico de Presenças Concluídas - Suporta ?guild=rise|gc|emo|minducas
   app.get('/api/presencas/historico', (req, res) => {
     try {
       let history = checkinDb.getHistory();
       const limit = Math.max(1, Math.min(Number(req.query.limit) || 20, 200));
       const offset = Math.max(0, Number(req.query.offset) || 0);
+      const guildFilter = req.query.guild ? String(req.query.guild).toLowerCase().trim() : null;
 
       if (req.query.eventId) {
         const evId = String(req.query.eventId).toLowerCase();
         history = history.filter(h => h.eventId?.toLowerCase() === evId);
       }
 
+      if (guildFilter) {
+        history = history.filter(h => {
+          if (h.guildId && h.guildId.toLowerCase() === guildFilter) return true;
+          return h.attendees?.some(a => {
+            const attGuild = a.guild ? String(a.guild).toLowerCase().trim() : 'rise';
+            return attGuild === guildFilter;
+          });
+        });
+      }
+
       const total = history.length;
-      const paginated = history.slice(offset, offset + limit).map(h => ({
-        id: h.id,
-        eventId: h.eventId,
-        eventName: h.eventName,
-        pointsPerAttendee: h.pointsPerAttendee,
-        closedAtISO: h.closedAtISO,
-        totalAttendees: h.attendees?.length || 0,
-        attendees: h.attendees || []
-      }));
+      const paginated = history.slice(offset, offset + limit).map(h => {
+        let atts = (h.attendees || []).map(a => ({
+          ...a,
+          guild: a.guild ? String(a.guild).toLowerCase().trim() : resolveMemberGuild(a.userId, client)
+        }));
+
+        if (guildFilter) {
+          atts = atts.filter(a => a.guild === guildFilter);
+        }
+
+        return {
+          id: h.id,
+          eventId: h.eventId,
+          eventName: h.eventName,
+          guildId: h.guildId || (guildFilter || null),
+          pointsPerAttendee: h.pointsPerAttendee,
+          closedAtISO: h.closedAtISO,
+          totalAttendees: atts.length,
+          attendees: atts
+        };
+      });
 
       res.json({
         success: true,
+        guild: guildFilter || 'todas',
         total,
         limit,
         offset,
@@ -208,10 +302,12 @@ export function createApiApp(client) {
 
       // 3. Status in-game registrado no bot
       const memberGameData = db.getMemberData(userId);
+      const memberGuild = memberGameData?.guild || resolveMemberGuild(userId, client);
 
       res.json({
         success: true,
         userId,
+        guild: memberGuild,
         charName: memberGameData?.charName || (allIndex !== -1 ? allTime[allIndex].displayName : null),
         gameStats: memberGameData?.parsedStats || null,
         lastStatusUpdateISO: memberGameData?.lastStatusUpdateISO || null,
@@ -241,10 +337,21 @@ export function createApiApp(client) {
     }
   });
 
-  // 6. Lista de Membros e Status Cadastrados (Área de Membros / Mural de Poder)
+  // 6. Lista de Membros e Status Cadastrados (Área de Membros / Mural de Poder) - Suporta ?guild=rise|gc|emo|minducas
   app.get('/api/membros/status', (req, res) => {
     try {
       let members = db.getGuildMembersList();
+      const guildFilter = req.query.guild ? String(req.query.guild).toLowerCase().trim() : null;
+
+      // Anexa a guilda a cada membro
+      members = members.map(m => ({
+        ...m,
+        guild: m.guild ? String(m.guild).toLowerCase().trim() : resolveMemberGuild(m.userId, client)
+      }));
+
+      if (guildFilter) {
+        members = members.filter(m => m.guild === guildFilter);
+      }
 
       if (req.query.classe) {
         const queryClasse = String(req.query.classe).toLowerCase();
@@ -260,6 +367,7 @@ export function createApiApp(client) {
 
       res.json({
         success: true,
+        guild: guildFilter || 'todas',
         total: members.length,
         data: members
       });

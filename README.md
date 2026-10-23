@@ -50,7 +50,12 @@ Após a seleção no menu, digita-se o tempo que falta no formato `HH:MM` (ex: `
 - `/cargostaff [adicionar|remover|listar]`: Gerencia cargos autorizados dinamicamente.
 - `/testar`: Testa os modelos de Embeds de avisos no canal.
 
-### 🌟 Destaques da v2.4.0 e v2.5.0
+### 🌟 Destaques da v2.4.0, v2.5.0 e v2.6.0
+- **Sistema Multi-Guild e Multi-Server (v2.6.0)**: Suporte simultâneo para as 4 guildas da Aliança (**RiseGaming** no Rook, **GC** no Bishop, **EMOCORE** no Bishop, **Minducas** no Knight).
+  - **Masmorra de Pedra / Interserver**: Abertura simultânea nos 4 canais de check-in com pings dos respectivos cargos (`ALLIANCE_GUILDS`).
+  - **Masmorra de Gelo**: Roteamento inteligente por servidor (Rook -> Rise; Bishop -> GC e EMOCORE; Knight -> Minducas).
+  - **Rankings Independentes**: Fechamento semanal e mensal automático nos 4 canais de ranking específicos de cada guilda.
+  - **API REST Multi-Guild**: Suporte a filtro por guilda (`?guild=gc|emo|minducas|rise`) em todos os endpoints de ranking, presenças e status.
 - **API REST Integrada (v2.5.0)**: Servidor Express nativo na porta `3001` protegido por `API_KEY` para alimentar o site da guilda em tempo real (check-ins ativos, ranking, histórico, ficha do jogador e status).
 - **Check-in de Piloto**: Permite que quem pilota confirme a presença do dono da conta pelo Discord — ambos recebem pontuação integral com trava anti-duplicação.
 - **Horário Corujão (Boost Time)**: Bosses nascidos entre 00:00 e 07:00 concedem automaticamente +2 pontos de bônus com visual roxo.
@@ -66,11 +71,11 @@ Autenticação via header `Authorization: Bearer <API_KEY>` ou `x-api-key: <API_
 | Método | Rota | Descrição |
 |---|---|---|
 | `GET` | `/api/health` | Status de saúde do bot e uptime (Público) |
-| `GET` | `/api/presencas/ativas` | Check-ins ativos em tempo real com lista de quem confirmou |
-| `GET` | `/api/presencas/ranking` | Ranking da guilda (`?tipo=semanal\|mensal\|geral`, `?limit=50&offset=0`) |
-| `GET` | `/api/presencas/historico` | Histórico dos check-ins passados (`?limit=20&eventId=tandallon`) |
+| `GET` | `/api/presencas/ativas` | Check-ins ativos em tempo real com lista de quem confirmou (`?guild=gc\|emo\|minducas\|rise`) |
+| `GET` | `/api/presencas/ranking` | Ranking da guilda ou aliança unificada (`?tipo=semanal\|mensal\|geral`, `?guild=gc`, `?limit=50&offset=0`) |
+| `GET` | `/api/presencas/historico` | Histórico dos check-ins passados (`?limit=20&eventId=tandallon&guild=gc`) |
 | `GET` | `/api/presencas/membro/:userId` | Raio-X do membro (pontuação semanal/mensal/geral, ranking e eventos recentes) |
-| `GET` | `/api/membros/status` | Mural de Poder: status in-game dos membros lidos por IA (`?classe=...&sort=pc`) |
+| `GET` | `/api/membros/status` | Mural de Poder: status in-game dos membros lidos por IA (`?classe=...&sort=pc&guild=gc`) |
 | `GET` | `/api/bosses/agendados` | Lista de bosses com contagem regressiva agendada |
 
 ---

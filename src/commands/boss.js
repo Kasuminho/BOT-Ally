@@ -9,7 +9,7 @@ import {
 import { BOSS_LIST } from '../utils/bossList.js';
 import { db } from '../database/db.js';
 import { createCustomBossEmbed } from '../utils/embeds.js';
-import { config } from '../config.js';
+import { config, getGuildForMember, getGuildForChannel, getGuildConfig, ALLIANCE_GUILDS } from '../config.js';
 import { rotateBossTurn, getBossRotationState } from '../utils/rotation.js';
 import { addAuditEntry } from '../utils/audit.js';
 import { getChannelForBoss } from '../services/scheduler.js';
@@ -191,8 +191,22 @@ export async function handleModalSubmit(interaction) {
   const spawnDateTime = now.plus({ minutes: totalMinutes });
   const spawnTimestamp = spawnDateTime.toMillis();
 
-  // Determina canal de destino (Canal de Gelo dedicado ou Canal Padrão)
-  const targetChannelId = getChannelForBoss(bossObj) || interaction.channelId;
+  // Se o boss for de Gelo, infere o servidor/guilda a partir do canal ou cargo do membro
+  let bossServer = null;
+  let bossGuild = null;
+
+  if (bossObj.category === 'gelo') {
+    const channelGuildKey = getGuildForChannel(interaction.channelId);
+    const memberGuildKey = getGuildForMember(interaction.member);
+    const gKey = channelGuildKey || memberGuildKey || 'rise';
+    const gCfg = getGuildConfig(gKey);
+
+    bossServer = gCfg?.server || 'Rook';
+    bossGuild = gCfg?.id || gKey;
+  }
+
+  // Determina canal de destino (Canal de Gelo dedicado ou Canal Padrão da Guilda)
+  const targetChannelId = getChannelForBoss({ ...bossObj, server: bossServer, guild: bossGuild }) || interaction.channelId;
 
   const bossData = {
     id: `${bossObj.id}_${Date.now()}`,
@@ -201,6 +215,8 @@ export async function handleModalSubmit(interaction) {
     location: bossObj.location,
     category: bossObj.category,
     categoryLabel: bossObj.categoryLabel,
+    server: bossServer,
+    guild: bossGuild,
     spawnTimestamp,
     createdBy: interaction.user.tag,
     channelId: targetChannelId,
@@ -212,17 +228,19 @@ export async function handleModalSubmit(interaction) {
   db.addBoss(bossData);
 
   // Registro na Auditoria
+  const serverAudit = bossServer ? ` [Servidor: ${bossServer} / Guilda: ${bossGuild}]` : '';
   addAuditEntry(
     interaction.user.tag,
     interaction.user.id,
-    `Agendou o Boss ${bossObj.name} (${bossObj.location}) para ${totalMinutes}m a partir de agora`
+    `Agendou o Boss ${bossObj.name} (${bossObj.location})${serverAudit} para ${totalMinutes}m a partir de agora`
   );
 
   const embed = createCustomBossEmbed(bossData, 'REGISTERED');
 
   // Resposta EFÊMERA
+  const serverInfo = bossServer ? ` [Servidor: **${bossServer}** (${bossGuild.toUpperCase()})]` : '';
   await interaction.reply({
-    content: `📢 **[BOSS RASTREADO]** Timer ativado para **${bossObj.name}** (${bossObj.categoryLabel})!${rotText}\nOs avisos serão enviados no canal <#${targetChannelId}>.`,
+    content: `📢 **[BOSS RASTREADO]** Timer ativado para **${bossObj.name}** (${bossObj.categoryLabel})${serverInfo}!${rotText}\nOs avisos serão enviados no canal <#${targetChannelId}>.`,
     embeds: [embed],
     ephemeral: true
   });

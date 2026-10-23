@@ -7,7 +7,7 @@ import {
   createWeeklyEventEmbed,
   createRankingEmbed
 } from '../utils/embeds.js';
-import { config } from '../config.js';
+import { config, ALLIANCE_GUILDS, getGuildConfig, getGuildForChannel, getChannelsForCategory } from '../config.js';
 import { MEMBROS_ROLE_ID } from '../utils/bossList.js';
 import { rotateBossTurn, updateRotationPanel, updateGeloRotationPanel } from '../utils/rotation.js';
 import { checkinService } from './checkinService.js';
@@ -27,26 +27,45 @@ export function isGeloBoss(boss) {
 }
 
 /**
- * Retorna o ID do canal de destino correto para o boss:
- * - Se for Gelo e GELO_ANNOUNCEMENT_CHANNEL_ID estiver configurado -> usa o canal de Gelo
- * - Caso contrário -> usa ANNOUNCEMENT_CHANNEL_ID padrão (ou canal do agendamento)
+ * Retorna os canais de destino para o boss:
+ * - Se for Gelo: respeita o servidor ou canal configurado do boss
+ * - Se for Interserver: retorna os canais de todas as guildas (globalmente)
  * @param {Object} boss 
+ * @returns {string[]}
  */
-export function getChannelForBoss(boss) {
-  if (isGeloBoss(boss) && config.geloAnnouncementChannelId) {
-    return config.geloAnnouncementChannelId;
+export function getChannelsForBoss(boss) {
+  if (isGeloBoss(boss)) {
+    const serverFilter = boss?.server || boss?.guild;
+    const channels = getChannelsForCategory('gelo', serverFilter);
+    if (channels && channels.length > 0) return channels;
+    if (boss?.channelId) return [boss.channelId];
+    if (config.geloAnnouncementChannelId) return [config.geloAnnouncementChannelId];
+    return [config.announcementChannelId].filter(Boolean);
   }
-  return config.announcementChannelId || boss?.channelId;
+
+  // Interserver: global em todas as guildas
+  const channels = getChannelsForCategory('interserver');
+  if (channels && channels.length > 0) return channels;
+  return [boss?.channelId || config.announcementChannelId].filter(Boolean);
 }
 
 /**
  * Retorna a menção de cargo apropriada para o boss:
- * - Se for boss da Masmorra de Gelo -> <@&1526217487274741947> (Membros)
+ * - Se for boss da Masmorra de Gelo:
+ *   Se o canal pertencer a uma guilda aliada, menciona a role dessa guilda;
+ *   caso contrário, usa o bossRoleId da Rise / MEMBROS_ROLE_ID.
  * - Se for Interserver ou Boss Fixo -> @everyone
  * @param {Object} boss 
+ * @param {string} [channelId]
  */
-function getPingRoleForBoss(boss) {
+function getPingRoleForBoss(boss, channelId = null) {
   if (isGeloBoss(boss)) {
+    if (channelId) {
+      const gKey = getGuildForChannel(channelId);
+      if (gKey && ALLIANCE_GUILDS[gKey]?.roleId) {
+        return `<@&${ALLIANCE_GUILDS[gKey].roleId}>`;
+      }
+    }
     const roleId = config.bossRoleId || MEMBROS_ROLE_ID;
     return roleId ? `<@&${roleId}>` : '@everyone';
   }
@@ -155,6 +174,8 @@ async function sendDailyFixedAnnouncement(client, noticeType) {
 
 /**
  * Checa os timers dos bosses customizados agendados via /boss
+ * - Boss Interserver: avisos de spawn/lembretes enviados globalmente em todas as guildas
+ * - Boss de Gelo: avisos enviados no servidor ou canal configurado do boss
  * @param {import('discord.js').Client} client 
  */
 async function checkCustomBossReminders(client) {
@@ -176,11 +197,9 @@ async function checkCustomBossReminders(client) {
 
     activeBosses.push(boss);
 
-    // Determina o canal de destino (Canal de Gelo dedicado ou Canal Padrão)
-    const channelId = getChannelForBoss(boss);
-    if (!channelId) continue;
-
-    const pingRole = getPingRoleForBoss(boss);
+    // Determina os canais de destino (Interserver = global; Gelo = servidor/guilda configurado)
+    const targetChannels = getChannelsForBoss(boss);
+    if (!targetChannels || targetChannels.length === 0) continue;
 
     // 1. Aviso de 20 Minutos Antes (janela de 8 a 20 minutos)
     if (diffMinutes <= 20 && diffMinutes > 8 && !boss.notified20m) {
@@ -188,18 +207,21 @@ async function checkCustomBossReminders(client) {
       updated = true;
       db.updateBoss(boss);
 
-      try {
-        const channel = await client.channels.fetch(channelId);
-        if (channel && channel.isTextBased()) {
-          const embed = createCustomBossEmbed(boss, 'REMINDER_20M');
-          await channel.send({
-            content: `🚨 **[AVISO 20M]** O Boss **${boss.name}** vai nascer em 20 minutos! ${pingRole}`,
-            embeds: [embed]
-          });
-          console.log(`✅ [SCHEDULER] Lembrete 20M enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
+      for (const channelId of targetChannels) {
+        try {
+          const channel = await client.channels.fetch(channelId).catch(() => null);
+          if (channel && channel.isTextBased()) {
+            const pingRole = getPingRoleForBoss(boss, channelId);
+            const embed = createCustomBossEmbed(boss, 'REMINDER_20M');
+            await channel.send({
+              content: `🚨 **[AVISO 20M]** O Boss **${boss.name}** vai nascer em 20 minutos! ${pingRole}`,
+              embeds: [embed]
+            });
+            console.log(`✅ [SCHEDULER] Lembrete 20M enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
+          }
+        } catch (err) {
+          console.error(`❌ [SCHEDULER] Erro ao enviar aviso 20M para ${boss.name} no canal ${channelId}:`, err);
         }
-      } catch (err) {
-        console.error(`❌ [SCHEDULER] Erro ao enviar aviso 20M para ${boss.name}:`, err);
       }
     }
     // 2. Aviso de 5 Minutos Antes (janela de 1 a 5 minutos)
@@ -208,18 +230,21 @@ async function checkCustomBossReminders(client) {
       updated = true;
       db.updateBoss(boss);
 
-      try {
-        const channel = await client.channels.fetch(channelId);
-        if (channel && channel.isTextBased()) {
-          const embed = createCustomBossEmbed(boss, 'REMINDER_5M');
-          await channel.send({
-            content: `🔥 **[AVISO 5M]** O Boss **${boss.name}** vai nascer em 5 MINUTOS! ${pingRole}`,
-            embeds: [embed]
-          });
-          console.log(`✅ [SCHEDULER] Lembrete 5M enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
+      for (const channelId of targetChannels) {
+        try {
+          const channel = await client.channels.fetch(channelId).catch(() => null);
+          if (channel && channel.isTextBased()) {
+            const pingRole = getPingRoleForBoss(boss, channelId);
+            const embed = createCustomBossEmbed(boss, 'REMINDER_5M');
+            await channel.send({
+              content: `🔥 **[AVISO 5M]** O Boss **${boss.name}** vai nascer em 5 MINUTOS! ${pingRole}`,
+              embeds: [embed]
+            });
+            console.log(`✅ [SCHEDULER] Lembrete 5M enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
+          }
+        } catch (err) {
+          console.error(`❌ [SCHEDULER] Erro ao enviar aviso 5M para ${boss.name} no canal ${channelId}:`, err);
         }
-      } catch (err) {
-        console.error(`❌ [SCHEDULER] Erro ao enviar aviso 5M para ${boss.name}:`, err);
       }
     }
     // 3. Aviso no Momento do Spawn (janela <= 0 minutos)
@@ -228,22 +253,25 @@ async function checkCustomBossReminders(client) {
       updated = true;
       db.updateBoss(boss);
 
-      try {
-        const channel = await client.channels.fetch(channelId);
-        if (channel && channel.isTextBased()) {
-          const embed = createCustomBossEmbed(boss, 'SPAWN');
-          await channel.send({
-            content: `💥 **[BOSS NASCEU]** O Boss **${boss.name}** NASCEU AGORA! ${pingRole}`,
-            embeds: [embed]
-          });
-          console.log(`✅ [SCHEDULER] Aviso SPAWN enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
-
-          // Agenda check-in automático após 3 minutos
-          checkinService.scheduleAutoCheckin(boss, client);
+      for (const channelId of targetChannels) {
+        try {
+          const channel = await client.channels.fetch(channelId).catch(() => null);
+          if (channel && channel.isTextBased()) {
+            const pingRole = getPingRoleForBoss(boss, channelId);
+            const embed = createCustomBossEmbed(boss, 'SPAWN');
+            await channel.send({
+              content: `💥 **[BOSS NASCEU]** O Boss **${boss.name}** NASCEU AGORA! ${pingRole}`,
+              embeds: [embed]
+            });
+            console.log(`✅ [SCHEDULER] Aviso SPAWN enviado para boss ${boss.name} no canal ${channelId} (Ping: ${pingRole})`);
+          }
+        } catch (err) {
+          console.error(`❌ [SCHEDULER] Erro ao enviar aviso SPAWN para ${boss.name} no canal ${channelId}:`, err);
         }
-      } catch (err) {
-        console.error(`❌ [SCHEDULER] Erro ao enviar aviso SPAWN para ${boss.name}:`, err);
       }
+
+      // Agenda check-in automático após delay (respeita interserver global e gelo por servidor/guilda)
+      checkinService.scheduleAutoCheckin(boss, client);
     }
   }
 
@@ -254,78 +282,92 @@ async function checkCustomBossReminders(client) {
 }
 
 /**
- * Envia o relatório e fechamento do Ranking Semanal no canal configurado
+ * Envia o relatório e fechamento do Ranking Semanal nos canais de cada guilda da aliança
  * @param {import('discord.js').Client} client 
  */
 export async function sendWeeklyRankingReport(client) {
-  const channelId = config.rankingChannelId || config.checkinChannelId || config.announcementChannelId;
-  if (!channelId) {
-    console.warn('⚠️ [SCHEDULER] Canal para relatório de ranking não configurado!');
-    return;
-  }
+  console.log('🏆 [SCHEDULER] Disparando relatórios de Ranking Semanal para as 4 guildas aliadas...');
+  const yesterday = DateTime.now().setZone('America/Sao_Paulo').minus({ days: 1 });
+  const startStr = yesterday.startOf('week').toFormat('dd/MM');
+  const endStr = yesterday.endOf('week').toFormat('dd/MM');
+  const periodLabel = `${startStr} a ${endStr}`;
 
-  try {
-    const channel = await client.channels.fetch(channelId);
-    if (!channel || !channel.isTextBased()) return;
+  for (const guild of Object.values(ALLIANCE_GUILDS)) {
+    const channelId = guild.rankingChannelId || (guild.id === 'rise' ? (config.rankingChannelId || config.checkinChannelId || config.announcementChannelId) : null);
 
-    // Pega o fechamento da semana encerrada (últimos 7 dias até domingo 23:59)
-    const yesterday = DateTime.now().setZone('America/Sao_Paulo').minus({ days: 1 });
-    const rankings = checkinDb.getWeeklyRanking(yesterday);
-    const startStr = yesterday.startOf('week').toFormat('dd/MM');
-    const endStr = yesterday.endOf('week').toFormat('dd/MM');
-    const periodLabel = `${startStr} a ${endStr}`;
+    if (!channelId) {
+      console.warn(`⚠️ [SCHEDULER] Canal de ranking não configurado para a guilda ${guild.name} (${guild.id}).`);
+      continue;
+    }
 
-    const embed = createRankingEmbed({
-      title: 'FECHAMENTO DO RANKING SEMANAL DE PRESENÇA',
-      periodLabel,
-      rankings
-    });
+    try {
+      const channel = await client.channels.fetch(channelId).catch(() => null);
+      if (!channel || !channel.isTextBased()) {
+        console.warn(`⚠️ [SCHEDULER] Canal ${channelId} de ranking para ${guild.name} não encontrado ou inválido.`);
+        continue;
+      }
 
-    await channel.send({
-      content: '📢 **[FECHAMENTO SEMANAL]** Confira a classificação geral da semana que se encerrou!',
-      embeds: [embed]
-    });
+      const rankings = checkinDb.getWeeklyRanking(yesterday, guild.id);
 
-    console.log(`✅ [SCHEDULER] Relatório de ranking semanal enviado com sucesso no canal ${channelId}.`);
-  } catch (err) {
-    console.error('❌ [SCHEDULER] Erro ao enviar relatório semanal:', err);
+      const embed = createRankingEmbed({
+        title: `RANKING SEMANAL DE PRESENÇA - ${guild.name} (${guild.server})`,
+        periodLabel,
+        rankings
+      });
+
+      await channel.send({
+        content: `📢 **[FECHAMENTO SEMANAL - ${guild.name.toUpperCase()}]** Confira a classificação semanal da guilda!`,
+        embeds: [embed]
+      });
+
+      console.log(`✅ [SCHEDULER] Relatório semanal enviado com sucesso para ${guild.name} no canal ${channelId}.`);
+    } catch (err) {
+      console.error(`❌ [SCHEDULER] Erro ao enviar relatório semanal de ${guild.name}:`, err);
+    }
   }
 }
 
 /**
- * Envia o relatório e fechamento do Ranking Mensal no canal configurado
+ * Envia o relatório e fechamento do Ranking Mensal nos canais de cada guilda da aliança
  * @param {import('discord.js').Client} client 
  */
 export async function sendMonthlyRankingReport(client) {
-  const channelId = config.rankingChannelId || config.checkinChannelId || config.announcementChannelId;
-  if (!channelId) {
-    console.warn('⚠️ [SCHEDULER] Canal para relatório de ranking não configurado!');
-    return;
-  }
+  console.log('🏆 [SCHEDULER] Disparando relatórios de Ranking Mensal para as 4 guildas aliadas...');
+  const lastMonth = DateTime.now().setZone('America/Sao_Paulo').minus({ days: 1 });
+  const periodLabel = lastMonth.toFormat('LLLL / yyyy');
 
-  try {
-    const channel = await client.channels.fetch(channelId);
-    if (!channel || !channel.isTextBased()) return;
+  for (const guild of Object.values(ALLIANCE_GUILDS)) {
+    const channelId = guild.rankingChannelId || (guild.id === 'rise' ? (config.rankingChannelId || config.checkinChannelId || config.announcementChannelId) : null);
 
-    // Mês recém-encerrado
-    const lastMonth = DateTime.now().setZone('America/Sao_Paulo').minus({ days: 1 });
-    const rankings = checkinDb.getMonthlyRanking(lastMonth);
-    const periodLabel = lastMonth.toFormat('LLLL / yyyy');
+    if (!channelId) {
+      console.warn(`⚠️ [SCHEDULER] Canal de ranking não configurado para a guilda ${guild.name} (${guild.id}).`);
+      continue;
+    }
 
-    const embed = createRankingEmbed({
-      title: 'FECHAMENTO DO RANKING MENSAL DE PRESENÇA',
-      periodLabel,
-      rankings
-    });
+    try {
+      const channel = await client.channels.fetch(channelId).catch(() => null);
+      if (!channel || !channel.isTextBased()) {
+        console.warn(`⚠️ [SCHEDULER] Canal ${channelId} de ranking para ${guild.name} não encontrado ou inválido.`);
+        continue;
+      }
 
-    await channel.send({
-      content: '🏆 **[FECHAMENTO MENSAL]** Parabéns a todos os membros pelo engajamento no mês!',
-      embeds: [embed]
-    });
+      const rankings = checkinDb.getMonthlyRanking(lastMonth, guild.id);
 
-    console.log(`✅ [SCHEDULER] Relatório de ranking mensal enviado com sucesso no canal ${channelId}.`);
-  } catch (err) {
-    console.error('❌ [SCHEDULER] Erro ao enviar relatório mensal:', err);
+      const embed = createRankingEmbed({
+        title: `RANKING MENSAL DE PRESENÇA - ${guild.name} (${guild.server})`,
+        periodLabel,
+        rankings
+      });
+
+      await channel.send({
+        content: `🏆 **[FECHAMENTO MENSAL - ${guild.name.toUpperCase()}]** Parabéns aos membros da ${guild.name} pelo engajamento no mês!`,
+        embeds: [embed]
+      });
+
+      console.log(`✅ [SCHEDULER] Relatório mensal enviado com sucesso para ${guild.name} no canal ${channelId}.`);
+    } catch (err) {
+      console.error(`❌ [SCHEDULER] Erro ao enviar relatório mensal de ${guild.name}:`, err);
+    }
   }
 }
 

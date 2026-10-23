@@ -26,6 +26,19 @@ export const data = new SlashCommandBuilder()
           .setMaxValue(60)
           .setRequired(false)
       )
+      .addStringOption(opt =>
+        opt
+          .setName('guilda')
+          .setDescription('Guilda para abertura do check-in (Opcional)')
+          .setRequired(false)
+          .addChoices(
+            { name: 'Todas as Guildas (Aliança)', value: 'todas' },
+            { name: 'RiseGaming', value: 'rise' },
+            { name: 'GC', value: 'gc' },
+            { name: 'EMOCORE', value: 'emo' },
+            { name: 'Minducas', value: 'minducas' }
+          )
+      )
   )
   .addSubcommand(sub =>
     sub
@@ -78,6 +91,7 @@ export async function execute(interaction) {
   if (subcommand === 'abrir') {
     const eventInput = interaction.options.getString('evento').toLowerCase();
     const duration = interaction.options.getInteger('duracao') || null;
+    const guildaChoice = interaction.options.getString('guilda') || null;
 
     const event = eventsDb.get(eventInput);
     const eventName = event ? event.name : eventInput.toUpperCase();
@@ -89,17 +103,24 @@ export async function execute(interaction) {
       eventId: eventInput,
       createdBy: authorName,
       durationMinutes: duration,
-      client: interaction.client
+      client: interaction.client,
+      guildId: guildaChoice,
+      member: interaction.member,
+      customChannelId: interaction.channelId
     });
 
     if (!newCheckin) {
       return interaction.editReply({
-        content: '❌ **Erro ao abrir check-in!** Verifique se o canal de check-in (`CHECKIN_CHANNEL_ID` ou `GELO_ANNOUNCEMENT_CHANNEL_ID`) está configurado no `.env`.'
+        content: '❌ **Erro ao abrir check-in!** Verifique se o canal de check-in (`CHECKIN_CHANNEL_ID` ou canais das guildas) está configurado no `.env`.'
       });
     }
 
+    const channelInfo = newCheckin.multiTargets && newCheckin.multiTargets.length > 1
+      ? `Canais: ${newCheckin.multiTargets.map(t => `<#${t.channelId}> (${t.guild?.name || t.guildId})`).join(', ')}`
+      : `Canal: <#${newCheckin.channelId}>`;
+
     return interaction.editReply({
-      content: `✅ **Check-in para "${eventName}" aberto com sucesso!**\nCanal: <#${newCheckin.channelId}>\nDuração: **${newCheckin.durationMinutes} minutos**\nPontuação: **${newCheckin.points} ponto(s)** por participante.`
+      content: `✅ **Check-in para "${eventName}" aberto com sucesso!**\n${channelInfo}\nDuração: **${newCheckin.durationMinutes} minutos**\nPontuação: **${newCheckin.points} ponto(s)** por participante.`
     });
   }
 
@@ -116,7 +137,8 @@ export async function execute(interaction) {
 
     let msg = '📋 **Check-ins Ativos no Momento:**\n\n';
     activeList.forEach(c => {
-      msg += `• **${c.eventName}** (ID: \`${c.id}\`) - Canal: <#${c.channelId}> - Confirmados: **${c.attendees.length}**\n`;
+      const gName = c.guildName || (c.guildId ? c.guildId.toUpperCase() : 'Geral');
+      msg += `• **${c.eventName}** [\`${gName}\`] (ID: \`${c.id}\`) - Canal: <#${c.channelId}> - Confirmados: **${c.attendees.length}**\n`;
     });
 
     return interaction.reply({ content: msg, ephemeral: true });
@@ -133,17 +155,19 @@ export async function execute(interaction) {
       });
     }
 
+    const gInfo = chk.guildName || (chk.guildId ? chk.guildId.toUpperCase() : 'Aliança');
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
       .setTitle(`📋 Detalhes do Check-in: ${chk.eventName}`)
-      .setDescription(`ID: \`${chk.id}\` | Status: **${chk.status === 'open' ? '🟢 Aberto' : '🔒 Encerrado'}**\nPontos por participante: **${chk.points || chk.pointsPerAttendee || 1}**`)
+      .setDescription(`ID: \`${chk.id}\` | Guilda/Escopo: **${gInfo}** | Status: **${chk.status === 'open' ? '🟢 Aberto' : '🔒 Encerrado'}**\nPontos por participante: **${chk.points || chk.pointsPerAttendee || 1}**`)
       .setTimestamp();
 
     if (chk.attendees && chk.attendees.length > 0) {
       let listText = '';
       chk.attendees.forEach((a, i) => {
         const pilotText = a.isPilot ? ` 🎮 *(Piloto: ${a.pilotByName || 'Outro'})*` : ' 👤 *(Direto)*';
-        listText += `${i + 1}. **${a.displayName}** (<@${a.userId}>)${pilotText}\n`;
+        const guildStr = a.guild ? ` \`[${a.guild.toUpperCase()}]\`` : '';
+        listText += `${i + 1}. **${a.displayName}**${guildStr} (<@${a.userId}>)${pilotText}\n`;
       });
       embed.addFields({ name: `✅ Participantes Confirmados (${chk.attendees.length})`, value: listText.slice(0, 1024) });
     } else {
@@ -170,18 +194,20 @@ export async function execute(interaction) {
       await checkinService.refreshCheckinMessage(interaction.client, result.checkin);
     }
 
+    const removedGuild = result.removed?.[0]?.guild ? `[${result.removed[0].guild.toUpperCase()}] ` : '';
+
     // Log de auditoria
     const staffTag = interaction.user.tag;
     const staffId = interaction.user.id;
     addAuditEntry(
       staffTag,
       staffId,
-      `Removeu presença de ${targetUser.tag} (${targetUser.id}) do check-in ${result.checkin.id} (${result.checkin.eventName})`
+      `Removeu presença de ${targetUser.tag} (${targetUser.id}) ${removedGuild}do check-in ${result.checkin.id} (${result.checkin.eventName})`
     );
 
     const contextStr = result.isActive ? 'check-in ativo' : 'histórico';
     return interaction.reply({
-      content: `🗑️ **Presença removida com sucesso!**\nMembro: <@${targetUser.id}> (${targetUser.tag})\nCheck-in: **${result.checkin.eventName}** (\`${result.checkin.id}\` - ${contextStr})\nRemovidos: **${result.removed?.length || 1}** registro(s).`,
+      content: `🗑️ **Presença removida com sucesso!**\nMembro: <@${targetUser.id}> (${targetUser.tag}) ${removedGuild}\nCheck-in: **${result.checkin.eventName}** (\`${result.checkin.id}\` - ${contextStr})\nRemovidos: **${result.removed?.length || 1}** registro(s).`,
       ephemeral: true
     });
   }

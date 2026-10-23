@@ -156,12 +156,24 @@ export const checkinDb = {
 
   /**
    * Consolida o ranking semanal (Segunda 00:00 a Domingo 23:59 Fuso SP)
-   * @param {DateTime} targetDate 
+   * @param {DateTime|string} [targetDate] Data de referência ou guildFilter direto
+   * @param {string|null} [guildFilter=null] Filtro de guilda ('gc', 'rise', 'emo', 'minducas')
    */
-  getWeeklyRanking(targetDate = DateTime.now().setZone('America/Sao_Paulo')) {
+  getWeeklyRanking(targetDate = DateTime.now().setZone('America/Sao_Paulo'), guildFilter = null) {
+    let date = targetDate;
+    let filter = guildFilter;
+
+    // Trata chamada simplificada com apenas guildFilter (ex: getWeeklyRanking('gc'))
+    if (typeof targetDate === 'string' && !guildFilter) {
+      filter = targetDate;
+      date = DateTime.now().setZone('America/Sao_Paulo');
+    } else if (!date || typeof date.startOf !== 'function') {
+      date = DateTime.now().setZone('America/Sao_Paulo');
+    }
+
     const history = this.getHistory();
-    const startOfWeek = targetDate.startOf('week');
-    const endOfWeek = targetDate.endOf('week');
+    const startOfWeek = date.startOf('week');
+    const endOfWeek = date.endOf('week');
 
     const weeklyHistory = history.filter(item => {
       if (!item.closedAtISO) return false;
@@ -169,17 +181,29 @@ export const checkinDb = {
       return itemDate >= startOfWeek && itemDate <= endOfWeek;
     });
 
-    return calculateRankings(weeklyHistory);
+    return calculateRankings(weeklyHistory, filter);
   },
 
   /**
    * Consolida o ranking mensal (1º dia do mês 00:00 ao último dia 23:59)
-   * @param {DateTime} targetDate 
+   * @param {DateTime|string} [targetDate] Data de referência ou guildFilter direto
+   * @param {string|null} [guildFilter=null] Filtro de guilda ('gc', 'rise', 'emo', 'minducas')
    */
-  getMonthlyRanking(targetDate = DateTime.now().setZone('America/Sao_Paulo')) {
+  getMonthlyRanking(targetDate = DateTime.now().setZone('America/Sao_Paulo'), guildFilter = null) {
+    let date = targetDate;
+    let filter = guildFilter;
+
+    // Trata chamada simplificada com apenas guildFilter (ex: getMonthlyRanking('gc'))
+    if (typeof targetDate === 'string' && !guildFilter) {
+      filter = targetDate;
+      date = DateTime.now().setZone('America/Sao_Paulo');
+    } else if (!date || typeof date.startOf !== 'function') {
+      date = DateTime.now().setZone('America/Sao_Paulo');
+    }
+
     const history = this.getHistory();
-    const startOfMonth = targetDate.startOf('month');
-    const endOfMonth = targetDate.endOf('month');
+    const startOfMonth = date.startOf('month');
+    const endOfMonth = date.endOf('month');
 
     const monthlyHistory = history.filter(item => {
       if (!item.closedAtISO) return false;
@@ -187,34 +211,52 @@ export const checkinDb = {
       return itemDate >= startOfMonth && itemDate <= endOfMonth;
     });
 
-    return calculateRankings(monthlyHistory);
+    return calculateRankings(monthlyHistory, filter);
   },
 
   /**
    * Consolida o ranking de todos os tempos
+   * @param {string|null} [guildFilter=null] Filtro de guilda ('gc', 'rise', 'emo', 'minducas')
    */
-  getAllTimeRanking() {
+  getAllTimeRanking(guildFilter = null) {
     const history = this.getHistory();
-    return calculateRankings(history);
+    return calculateRankings(history, guildFilter);
   }
 };
 
 /**
- * Agrupa as presenças por usuário calculando pontuação total acumulada
+ * Agrupa as presenças por usuário calculando pontuação total acumulada.
+ * Suporta filtragem por guilda ('rise', 'gc', 'emo', 'minducas').
+ * Se um attendee não possuir o campo guild, atribui como 'rise'.
+ * 
+ * @param {Array} checkinList
+ * @param {string|null} [guildFilter=null]
+ * @returns {Array}
  */
-function calculateRankings(checkinList) {
+export function calculateRankings(checkinList, guildFilter = null) {
   const userMap = new Map();
+  const normalizedGuildFilter = guildFilter
+    ? (typeof guildFilter === 'object' && guildFilter.id ? String(guildFilter.id) : String(guildFilter)).toLowerCase().trim()
+    : null;
 
   for (const chk of checkinList) {
     const points = Number(chk.pointsPerAttendee) || Number(chk.points) || 1;
     const attendees = chk.attendees || [];
 
     for (const att of attendees) {
+      const attGuild = att.guild ? String(att.guild).toLowerCase().trim() : 'rise';
+
+      // Se filtro de guilda foi informado, ignora membros de outras guildas
+      if (normalizedGuildFilter && attGuild !== normalizedGuildFilter) {
+        continue;
+      }
+
       // Identificador chave: ID de quem recebe os pontos (usuário ou a conta pilotada)
       const userKey = att.userId || att.displayName;
       const current = userMap.get(userKey) || {
         userId: att.userId,
         displayName: att.displayName,
+        guild: attGuild,
         totalPoints: 0,
         totalCheckins: 0,
         pilotCount: 0
@@ -226,8 +268,11 @@ function calculateRankings(checkinList) {
         current.pilotCount += 1;
       }
 
-      // Mantém o nome mais recente caso o usuário tenha trocado de nick
+      // Mantém o nome e guilda mais recentes caso o usuário tenha trocado de nick
       current.displayName = att.displayName;
+      if (att.guild) {
+        current.guild = attGuild;
+      }
 
       userMap.set(userKey, current);
     }
@@ -243,3 +288,5 @@ function calculateRankings(checkinList) {
 
   return ranking;
 }
+
+checkinDb.calculateRankings = calculateRankings;

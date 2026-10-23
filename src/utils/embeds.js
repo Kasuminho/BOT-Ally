@@ -1,6 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import { getRandomJoke } from './jokes.js';
 import { getBossRotationState, getNextTagInSequence } from './rotation.js';
+import { getGuildConfig, ALLIANCE_GUILDS } from '../config.js';
 
 /**
  * Cria o Embed "enfeitado" para o aviso diário fixo das 23:00 (TA 2 / TA 3 / TA 4 - FFA)
@@ -190,9 +191,17 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:F> (<t:${unixSec}:R>)`, inline: false }
       );
 
+    if (boss.server) {
+      embed.addFields({ name: '🌐 Servidor', value: `**${boss.server}**${boss.guild ? ` (${boss.guild.toUpperCase()})` : ''}`, inline: true });
+    }
+
     if (isRotatable && currentTag) {
       const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
       embed.addFields({ name: tagLabel, value: tagInfo, inline: true });
+    }
+
+    if (boss.server) {
+      embed.addFields({ name: '🌐 Servidor', value: `**${boss.server}**${boss.guild ? ` (${boss.guild.toUpperCase()})` : ''}`, inline: true });
     }
 
     embed
@@ -209,6 +218,10 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '📍 Local', value: `**${boss.location}**`, inline: true },
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
       );
+
+    if (boss.server) {
+      embed.addFields({ name: '🌐 Servidor', value: `**${boss.server}**${boss.guild ? ` (${boss.guild.toUpperCase()})` : ''}`, inline: true });
+    }
 
     if (isRotatable && currentTag) {
       const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
@@ -227,6 +240,10 @@ export function createCustomBossEmbed(boss, noticeType) {
         { name: '📍 Local', value: `**${boss.location}**`, inline: true },
         { name: '⏰ Horário do Spawn', value: `<t:${unixSec}:T> (<t:${unixSec}:R>)`, inline: false }
       );
+
+    if (boss.server) {
+      embed.addFields({ name: '🌐 Servidor', value: `**${boss.server}**${boss.guild ? ` (${boss.guild.toUpperCase()})` : ''}`, inline: true });
+    }
 
     if (isRotatable && currentTag) {
       const tagInfo = upcomingTag ? `👑 **\`${currentTag}\`** *(Próxima: ${upcomingTag})*` : `👑 **\`${currentTag}\`**`;
@@ -301,7 +318,18 @@ export function createBossListEmbed(bosses) {
 /**
  * Cria o aviso inicial de que um novo check-in foi aberto
  */
-export function createCheckinNoticeEmbed({ eventName, points, basePoints, bonusPoints, isBoost, durationMinutes, channelId, pingText = '@everyone' }) {
+export function createCheckinNoticeEmbed({
+  eventName,
+  points,
+  basePoints,
+  bonusPoints,
+  isBoost,
+  durationMinutes,
+  channelId,
+  pingText = '@everyone',
+  guildFilter = null
+}) {
+  const guildCfg = guildFilter ? getGuildConfig(guildFilter) : null;
   const formattedPing = /^\d+$/.test(String(pingText).trim())
     ? `<@&${pingText}>`
     : pingText;
@@ -310,37 +338,55 @@ export function createCheckinNoticeEmbed({ eventName, points, basePoints, bonusP
     ? `**${points} ponto(s)** 🌙 *(Base: ${basePoints} + Corujão: +${bonusPoints})*`
     : `**${points} ponto(s)**`;
 
-  return new EmbedBuilder()
+  const titleGuild = guildCfg ? ` [${guildCfg.name}]` : '';
+
+  const embed = new EmbedBuilder()
     .setColor(isBoost ? '#9933FF' : '#FF0033')
-    .setTitle(`🚨 CHECK-IN NORMAL: ${eventName}${isBoost ? ' 🌙 [CORUJÃO ATIVO]' : ''}`)
+    .setTitle(`🚨 CHECK-IN NORMAL: ${eventName}${titleGuild}${isBoost ? ' 🌙 [CORUJÃO ATIVO]' : ''}`)
     .setDescription(`${formattedPing} **Um novo check-in foi aberto!**`)
     .addFields(
       { name: '🐍 Boss / Evento', value: `**${eventName}**`, inline: true },
       { name: '🎯 Pontos', value: pointsDesc, inline: true },
       { name: '⏰ Duração', value: `**${durationMinutes} minutos**`, inline: true },
       { name: '📍 Local', value: `Vá para <#${channelId}> para confirmar presença!`, inline: false }
-    )
-    .setTimestamp();
+    );
+
+  if (guildCfg) {
+    embed.addFields({ name: '🏰 Guilda / Servidor', value: `🛡️ **${guildCfg.name}** (${guildCfg.server})`, inline: true });
+  }
+
+  embed.setTimestamp();
+  return embed;
 }
 
 /**
  * Cria o Embed interativo principal do check-in com lista de confirmados em tempo real
  */
-export function createCheckinMainEmbed(checkin, remainingMinutes = 0) {
+export function createCheckinMainEmbed(checkin, remainingMinutes = 0, guildFilter = null) {
   const isClosed = checkin.status === 'closed' || remainingMinutes <= 0;
   const isBoost = Boolean(checkin.isBoost);
   const embedColor = isClosed ? '#2B2D31' : (isBoost ? '#9933FF' : '#00FF66');
 
+  const guildCfg = guildFilter ? getGuildConfig(guildFilter) : null;
+  const normalizedFilter = guildCfg ? guildCfg.id.toLowerCase() : (guildFilter ? String(guildFilter).toLowerCase() : null);
+
+  const titleGuild = guildCfg ? ` [${guildCfg.name}]` : '';
+
   const embed = new EmbedBuilder()
     .setColor(embedColor)
-    .setTitle(`🚨 CHECK-IN NORMAL: ${checkin.eventName}${isBoost ? ' 🌙 [CORUJÃO ATIVO]' : ''}`)
+    .setTitle(`🚨 CHECK-IN NORMAL: ${checkin.eventName}${titleGuild}${isBoost ? ' 🌙 [CORUJÃO ATIVO]' : ''}`)
     .setDescription(isClosed ? '🔒 **Check-in encerrado!**' : 'Clique no botão abaixo para confirmar presença!')
     .setTimestamp();
 
-  // Lista dos confirmados (nicks do Discord no servidor)
+  // Lista dos confirmados (filtrada por guilda caso guildFilter seja informado)
+  const allAttendees = checkin.attendees || [];
+  const filteredAttendees = normalizedFilter
+    ? allAttendees.filter(a => (a.guild || 'rise').toLowerCase() === normalizedFilter)
+    : allAttendees;
+
   let attendeesText = 'Nenhum participante confirmado.';
-  if (checkin.attendees && checkin.attendees.length > 0) {
-    attendeesText = checkin.attendees
+  if (filteredAttendees.length > 0) {
+    attendeesText = filteredAttendees
       .map(a => {
         if (a.isPilot) {
           const pilotInfo = a.pilotByName ? ` *(Piloto: ${a.pilotByName})*` : ' *(Piloto)*';
@@ -349,17 +395,25 @@ export function createCheckinMainEmbed(checkin, remainingMinutes = 0) {
         return a.displayName;
       })
       .join('\n');
+
+    if (attendeesText.length > 1000) {
+      attendeesText = attendeesText.slice(0, 980) + `\n... e mais ${filteredAttendees.length - 25} participante(s)`;
+    }
   }
 
   const pointsValue = isBoost
     ? `**${checkin.points} ponto(s)** 🌙 *(+${checkin.bonusPoints} bônus)*`
     : `**${checkin.points} ponto(s)**`;
 
+  const confirmadosLabel = guildCfg
+    ? `✅ Confirmados - ${guildCfg.name} (${filteredAttendees.length})`
+    : `✅ Confirmados (${filteredAttendees.length})`;
+
   embed.addFields(
     { name: '👹 Pontuação', value: pointsValue, inline: true },
     { name: '⏰ Duração', value: `**${checkin.durationMinutes} minutos**`, inline: true },
     { name: '👤 Criado por', value: `**${checkin.createdBy}**`, inline: true },
-    { name: '✅ Confirmados', value: attendeesText, inline: false }
+    { name: confirmadosLabel, value: attendeesText, inline: false }
   );
 
   if (!isClosed) {
@@ -369,7 +423,7 @@ export function createCheckinMainEmbed(checkin, remainingMinutes = 0) {
       inline: false
     });
   } else {
-    embed.setFooter({ text: '✅ Check-in encerrado' });
+    embed.setFooter({ text: `✅ Check-in encerrado${guildCfg ? ` • ${guildCfg.name}` : ''}` });
   }
 
   return embed;
@@ -378,15 +432,23 @@ export function createCheckinMainEmbed(checkin, remainingMinutes = 0) {
 /**
  * Cria o Embed de resumo oficial do check-in após o encerramento
  */
-export function createCheckinSummaryEmbed(checkin, durationStr = '5min 0s') {
-  const total = checkin.attendees?.length || 0;
+export function createCheckinSummaryEmbed(checkin, durationStr = '5min 0s', guildFilter = null) {
+  const guildCfg = guildFilter ? getGuildConfig(guildFilter) : null;
+  const normalizedFilter = guildCfg ? guildCfg.id.toLowerCase() : (guildFilter ? String(guildFilter).toLowerCase() : null);
+
+  const allAttendees = checkin.attendees || [];
+  const attendees = normalizedFilter
+    ? allAttendees.filter(a => (a.guild || 'rise').toLowerCase() === normalizedFilter)
+    : allAttendees;
+
+  const total = attendees.length;
   const pointsPer = checkin.points || 1;
   const totalPoints = total * pointsPer;
   const isBoost = Boolean(checkin.isBoost);
 
   let attendeesText = 'Nenhum participante confirmado.';
-  if (checkin.attendees && checkin.attendees.length > 0) {
-    attendeesText = checkin.attendees
+  if (attendees.length > 0) {
+    attendeesText = attendees
       .map(a => {
         if (a.isPilot) {
           const pilotInfo = a.pilotByName ? ` *(Piloto: ${a.pilotByName})*` : ` *(Piloto: ${a.pilotForName || 'Membro'})*`;
@@ -395,24 +457,33 @@ export function createCheckinSummaryEmbed(checkin, durationStr = '5min 0s') {
         return a.displayName;
       })
       .join('\n');
+
+    if (attendeesText.length > 1000) {
+      attendeesText = attendeesText.slice(0, 980) + `\n... e mais ${attendees.length - 25} participante(s)`;
+    }
   }
 
   const pointsDesc = isBoost
     ? `**${pointsPer} ponto(s)** 🌙 *(Base: ${checkin.basePoints || (pointsPer - checkin.bonusPoints)} + Corujão: +${checkin.bonusPoints})*`
     : `**${pointsPer} ponto(s)**`;
 
+  const titleGuild = guildCfg ? ` [${guildCfg.name}]` : '';
+  const totalLabel = guildCfg ? `👤 Total (${guildCfg.name})` : '👤 Total de Participantes';
+  const pointsLabel = guildCfg ? `🏆 Pontuação Total (${guildCfg.name})` : '🏆 Pontuação Total';
+  const confirmadosLabel = guildCfg ? `✅ Confirmados (${guildCfg.name})` : '✅ Confirmados';
+
   return new EmbedBuilder()
     .setColor('#0099FF')
-    .setTitle(`📊 Resumo do Check-in para ${checkin.eventName}${isBoost ? ' 🌙 [CORUJÃO]' : ''}`)
+    .setTitle(`📊 Resumo do Check-in: ${checkin.eventName}${titleGuild}${isBoost ? ' 🌙 [CORUJÃO]' : ''}`)
     .setDescription(`Check-in tempo esgotado após ${durationStr}.`)
     .addFields(
       { name: '👤 Criado por', value: `**${checkin.createdBy}**`, inline: false },
-      { name: '✅ Confirmados', value: attendeesText, inline: false },
-      { name: '👤 Total de Participantes', value: `**${total}**`, inline: true },
+      { name: confirmadosLabel, value: attendeesText, inline: false },
+      { name: totalLabel, value: `**${total}**`, inline: true },
       { name: '🎯 Pontuação do Boss', value: pointsDesc, inline: true },
-      { name: '🏆 Pontuação Total', value: `**${totalPoints} pontos**`, inline: true }
+      { name: pointsLabel, value: `**${totalPoints} pontos**`, inline: true }
     )
-    .setFooter({ text: '✅ Presenças salvas no banco de dados com sucesso.' })
+    .setFooter({ text: `✅ Presenças salvas no banco de dados com sucesso.${guildCfg ? ` • Guilda: ${guildCfg.name}` : ''}` })
     .setTimestamp();
 }
 
