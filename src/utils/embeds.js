@@ -296,6 +296,9 @@ export function createBossListEmbed(bosses) {
     const unixSec = Math.floor(b.spawnTimestamp / 1000);
     desc += `**${idx + 1}. ${b.name}** (ID: \`${b.id}\`)\n`;
     desc += `📍 **Local:** ${b.location}\n`;
+    if (b.server) {
+      desc += `🌐 **Servidor:** ${b.server}${b.guild ? ` (${b.guild.toUpperCase()})` : ''}\n`;
+    }
     desc += `⏰ **Nascimento:** <t:${unixSec}:T> (<t:${unixSec}:R>)\n`;
 
     if ((b.category === 'interserver' || b.category === 'gelo')) {

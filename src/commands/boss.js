@@ -20,26 +20,55 @@ export const data = new SlashCommandBuilder()
   .setDescription('Seleciona um Boss da lista e define o tempo restante para o nascimento (HH:MM).');
 
 /**
+ * Retorna o servidor e guilda associados à interação atual
+ */
+function resolveInteractionServer(interaction) {
+  const channelGuildKey = getGuildForChannel(interaction.channelId);
+  const memberGuildKey = getGuildForMember(interaction.member);
+  const gKey = channelGuildKey || memberGuildKey || 'rise';
+  const gCfg = getGuildConfig(gKey);
+
+  const server = gCfg?.server || 'Rook';
+  const guild = gCfg?.id || gKey;
+  return { server, guild };
+}
+
+/**
+ * Checa se um boss já possui timer ativo relevante para o servidor do usuário
+ */
+function isBossActiveForServer(bossObj, activeBosses, userServer, nowMs) {
+  return activeBosses.some(b => {
+    if (b.bossId !== bossObj.id) return false;
+    if (b.spawnTimestamp <= (nowMs - 15 * 60 * 1000)) return false;
+
+    // Boss Interserver: timer global para toda a aliança
+    if (bossObj.category === 'interserver') return true;
+
+    // Boss de Gelo: timer isolado por servidor (Rook, Bishop, Knight)
+    if (bossObj.category === 'gelo') {
+      const bServer = b.server || (b.guild ? getGuildConfig(b.guild)?.server : 'Rook');
+      return String(bServer).toLowerCase() === String(userServer).toLowerCase();
+    }
+
+    return true;
+  });
+}
+
+/**
  * Execução do comando /boss
  * @param {import('discord.js').ChatInputCommandInteraction} interaction 
  */
 export async function execute(interaction) {
   const activeBosses = db.getBosses();
   const now = DateTime.now().setZone('America/Sao_Paulo').toMillis();
+  const { server: userServer } = resolveInteractionServer(interaction);
 
-  // Conjunto de IDs dos bosses que já possuem timer ativo
-  const activeBossIds = new Set(
-    activeBosses
-      .filter(b => b.spawnTimestamp > (now - 15 * 60 * 1000))
-      .map(b => b.bossId)
-  );
-
-  // Filtra apenas os bosses que AINDA NÃO possuem timer agendado
-  const availableBosses = BOSS_LIST.filter(b => !activeBossIds.has(b.id));
+  // Filtra apenas os bosses que AINDA NÃO possuem timer agendado no escopo do servidor
+  const availableBosses = BOSS_LIST.filter(b => !isBossActiveForServer(b, activeBosses, userServer, now));
 
   if (availableBosses.length === 0) {
     return interaction.reply({
-      content: 'ℹ️ **Todos os bosses disponíveis já possuem timers ativos agendados!**\nUse `/bosses` para visualizar a lista ou `/cancelarboss` para remover algum agendamento.',
+      content: `ℹ️ **Todos os bosses disponíveis para o servidor ${userServer} já possuem timers ativos agendados!**\nUse \`/bosses\` para visualizar a lista ou \`/cancelarboss\` para remover algum agendamento.`,
       ephemeral: true
     });
   }
@@ -79,13 +108,13 @@ export async function handleSelectMenu(interaction) {
   // Verifica se o boss já foi agendado enquanto o usuário navegava no menu
   const activeBosses = db.getBosses();
   const now = DateTime.now().setZone('America/Sao_Paulo').toMillis();
-  const isAlreadyScheduled = activeBosses.some(
-    b => b.bossId === bossObj.id && b.spawnTimestamp > (now - 15 * 60 * 1000)
-  );
+  const { server: userServer } = resolveInteractionServer(interaction);
+  const isAlreadyScheduled = isBossActiveForServer(bossObj, activeBosses, userServer, now);
 
   if (isAlreadyScheduled) {
+    const serverMsg = bossObj.category === 'gelo' ? ` para o servidor ${userServer}` : '';
     return interaction.reply({
-      content: `❌ **O boss ${bossObj.name} já possui um timer ativo agendado!**`,
+      content: `❌ **O boss ${bossObj.name} já possui um timer ativo agendado${serverMsg}!**`,
       ephemeral: true
     });
   }
@@ -160,16 +189,16 @@ export async function handleModalSubmit(interaction) {
 
   const now = DateTime.now().setZone('America/Sao_Paulo');
   const nowMs = now.toMillis();
+  const { server: userServer, guild: userGuild } = resolveInteractionServer(interaction);
 
-  // Validação de duplicidade no submit do modal
+  // Validação de duplicidade no submit do modal respeitando o servidor
   const activeBosses = db.getBosses();
-  const isAlreadyScheduled = activeBosses.some(
-    b => b.bossId === bossObj.id && b.spawnTimestamp > (nowMs - 15 * 60 * 1000)
-  );
+  const isAlreadyScheduled = isBossActiveForServer(bossObj, activeBosses, userServer, nowMs);
 
   if (isAlreadyScheduled) {
+    const serverMsg = bossObj.category === 'gelo' ? ` para o servidor ${userServer}` : '';
     return interaction.reply({
-      content: `❌ **O boss ${bossObj.name} já possui um timer ativo agendado!**`,
+      content: `❌ **O boss ${bossObj.name} já possui um timer ativo agendado${serverMsg}!**`,
       ephemeral: true
     });
   }
@@ -192,18 +221,8 @@ export async function handleModalSubmit(interaction) {
   const spawnTimestamp = spawnDateTime.toMillis();
 
   // Se o boss for de Gelo, infere o servidor/guilda a partir do canal ou cargo do membro
-  let bossServer = null;
-  let bossGuild = null;
-
-  if (bossObj.category === 'gelo') {
-    const channelGuildKey = getGuildForChannel(interaction.channelId);
-    const memberGuildKey = getGuildForMember(interaction.member);
-    const gKey = channelGuildKey || memberGuildKey || 'rise';
-    const gCfg = getGuildConfig(gKey);
-
-    bossServer = gCfg?.server || 'Rook';
-    bossGuild = gCfg?.id || gKey;
-  }
+  const bossServer = bossObj.category === 'gelo' ? userServer : null;
+  const bossGuild = bossObj.category === 'gelo' ? userGuild : null;
 
   // Determina canal de destino (Canal de Gelo dedicado ou Canal Padrão da Guilda)
   const targetChannelId = getChannelForBoss({ ...bossObj, server: bossServer, guild: bossGuild }) || interaction.channelId;

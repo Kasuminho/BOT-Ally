@@ -25,9 +25,10 @@ export async function execute(interaction) {
     .addOptions(
       activeBosses.map(b => {
         const unixSec = Math.floor(b.spawnTimestamp / 1000);
+        const serverSuffix = b.server ? ` [${b.server}]` : '';
         return {
-          label: `${b.name} (${b.location})`,
-          description: `ID: ${b.id} | Agendado por: ${b.createdBy}`,
+          label: `${b.name} (${b.location})${serverSuffix}`.slice(0, 100),
+          description: `ID: ${b.id} | Agendado por: ${b.createdBy}`.slice(0, 100),
           value: b.id
         };
       })
