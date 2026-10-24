@@ -4,6 +4,8 @@ import { DateTime } from 'luxon';
 import { config, ALLIANCE_GUILDS, getGuildForMember } from '../config.js';
 import { checkinDb } from '../database/checkinDb.js';
 import { db } from '../database/db.js';
+import { getAuditPage } from '../utils/audit.js';
+import { getAllowedRoles } from '../middleware/auth.js';
 
 /**
  * Resolve a guilda de um membro através do cache do Discord, do histórico de check-ins ou fallback
@@ -389,6 +391,89 @@ export function createApiApp(client) {
     } catch (err) {
       console.error('❌ [API] Erro ao buscar bosses agendados:', err);
       res.status(500).json({ success: false, error: 'Erro interno ao consultar bosses.' });
+    }
+  });
+
+  // 8. Diagnóstico Completo do Bot na VPS (Admin Health Check)
+  app.get('/api/admin/diagnostico', (req, res) => {
+    try {
+      const bosses = db.getBosses();
+      const activeCheckins = checkinDb.getActiveCheckins();
+      const auditPage = getAuditPage(1);
+      const allowedRoles = getAllowedRoles();
+      const mem = process.memoryUsage();
+
+      res.json({
+        success: true,
+        timestamp: DateTime.now().setZone('America/Sao_Paulo').toISO(),
+        bot: {
+          tag: client?.user ? client.user.tag : 'desconectado',
+          id: client?.user?.id || null,
+          pingMs: client?.ws?.ping || 0,
+          ready: Boolean(client?.isReady()),
+          uptimeSeconds: Math.floor(process.uptime()),
+          cachedChannels: client?.channels?.cache?.size || 0,
+          cachedGuilds: client?.guilds?.cache?.size || 0
+        },
+        bosses: {
+          totalAtivos: bosses.length,
+          lista: bosses.map(b => ({
+            id: b.id,
+            bossId: b.bossId,
+            name: b.name,
+            category: b.category,
+            server: b.server || null,
+            guild: b.guild || null,
+            spawnTimeISO: new Date(b.spawnTimestamp).toISOString(),
+            channelId: b.channelId
+          }))
+        },
+        checkins: {
+          totalAtivos: Object.keys(activeCheckins).length,
+          lista: Object.values(activeCheckins).map(c => ({
+            id: c.id,
+            eventId: c.eventId,
+            eventName: c.eventName,
+            durationMinutes: c.durationMinutes,
+            openedAtISO: c.openedAtISO,
+            expiresAtISO: c.expiresAtISO,
+            totalAttendees: c.attendees?.length || 0,
+            channels: c.channels || [{ channelId: c.channelId }]
+          }))
+        },
+        seguranca: {
+          superAdminIds: config.superAdminIds,
+          allowedRolesCount: allowedRoles.length,
+          allowedRoles
+        },
+        auditoriaRecente: auditPage.entries.slice(0, 10),
+        sistema: {
+          nodeVersion: process.version,
+          memoriaHeapMB: Math.round(mem.heapUsed / 1024 / 1024),
+          memoriaRssMB: Math.round(mem.rss / 1024 / 1024)
+        }
+      });
+    } catch (err) {
+      console.error('❌ [API] Erro ao gerar diagnóstico:', err);
+      res.status(500).json({ success: false, error: 'Erro ao gerar diagnóstico do bot.' });
+    }
+  });
+
+  // 9. Logs de Auditoria Completos (Admin)
+  app.get('/api/admin/audit', (req, res) => {
+    try {
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const auditData = getAuditPage(page);
+      res.json({
+        success: true,
+        page: auditData.currentPage,
+        totalPages: auditData.totalPages,
+        totalLogs: auditData.totalLogs,
+        data: auditData.entries
+      });
+    } catch (err) {
+      console.error('❌ [API] Erro ao buscar logs de auditoria:', err);
+      res.status(500).json({ success: false, error: 'Erro ao buscar auditoria.' });
     }
   });
 
